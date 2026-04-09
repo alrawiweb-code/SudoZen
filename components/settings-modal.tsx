@@ -1,4 +1,4 @@
-import { View, Text, Pressable, Switch, Modal, ScrollView } from 'react-native';
+import { View, Text, Pressable, Switch, Modal, ScrollView, StyleSheet } from 'react-native';
 import { useColors } from '@/hooks/use-colors';
 import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -33,18 +33,14 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
       if (saved) {
         setSettings(JSON.parse(saved));
       }
-    } catch (error) {
-      console.error('Failed to load settings:', error);
-    }
+    } catch {}
   };
 
   const saveSettings = async (newSettings: AppSettings) => {
     try {
       await AsyncStorage.setItem('app_settings', JSON.stringify(newSettings));
       setSettings(newSettings);
-    } catch (error) {
-      console.error('Failed to save settings:', error);
-    }
+    } catch {}
   };
 
   const toggleSound = () => {
@@ -58,7 +54,6 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
   };
 
   const handleResetStats = () => {
-    // This would be handled by the parent component
     onClose();
   };
 
@@ -69,31 +64,31 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
       transparent
       onRequestClose={onClose}
     >
-      <View className="flex-1 bg-black bg-opacity-50 justify-end">
+      <View style={styles.overlay}>
         <LinearGradient
           colors={['#0F172A', '#1E293B']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          className="rounded-t-3xl border-t border-slate-700"
+          style={styles.sheet}
         >
           <ScrollView
             contentContainerStyle={{ flexGrow: 1 }}
             showsVerticalScrollIndicator={false}
-            className="px-6 py-6"
+            style={styles.scrollView}
           >
             {/* Header */}
-            <View className="flex-row justify-between items-center mb-6">
-              <Text className="text-2xl font-bold text-white">Settings</Text>
+            <View style={styles.header}>
+              <Text style={styles.headerTitle}>Settings</Text>
               <Pressable onPress={onClose}>
-                <Text className="text-white text-2xl">✕</Text>
+                <Text style={styles.closeIcon}>✕</Text>
               </Pressable>
             </View>
 
             {/* Sound Setting */}
-            <View className="flex-row justify-between items-center bg-slate-800 rounded-xl p-4 mb-3 border border-slate-700">
-              <View className="flex-1">
-                <Text className="text-base font-semibold text-white">Sound Effects</Text>
-                <Text className="text-xs text-slate-400 mt-1">Enable game sounds</Text>
+            <View style={styles.settingRow}>
+              <View style={styles.settingTextGroup}>
+                <Text style={styles.settingLabel}>Sound Effects</Text>
+                <Text style={styles.settingSubLabel}>Enable game sounds</Text>
               </View>
               <Switch
                 value={settings.soundEnabled}
@@ -104,10 +99,10 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
             </View>
 
             {/* Haptics Setting */}
-            <View className="flex-row justify-between items-center bg-slate-800 rounded-xl p-4 mb-3 border border-slate-700">
-              <View className="flex-1">
-                <Text className="text-base font-semibold text-white">Haptic Feedback</Text>
-                <Text className="text-xs text-slate-400 mt-1">Feel your moves</Text>
+            <View style={styles.settingRow}>
+              <View style={styles.settingTextGroup}>
+                <Text style={styles.settingLabel}>Haptic Feedback</Text>
+                <Text style={styles.settingSubLabel}>Feel your moves</Text>
               </View>
               <Switch
                 value={settings.hapticsEnabled}
@@ -118,28 +113,22 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
             </View>
 
             {/* Reset Stats Button */}
-            <Pressable
-              onPress={handleResetStats}
-              className="bg-red-900 bg-opacity-30 rounded-xl p-4 border border-red-700 mt-6"
-            >
-              <Text className="text-red-400 font-semibold text-center">Reset Statistics</Text>
+            <Pressable onPress={handleResetStats} style={styles.resetBtn}>
+              <Text style={styles.resetBtnText}>Reset Statistics</Text>
             </Pressable>
 
             {/* About Section */}
-            <View className="bg-slate-800 rounded-xl p-4 border border-slate-700 mt-6 mb-6">
-              <Text className="text-sm font-semibold text-white mb-2">About</Text>
-              <Text className="text-xs text-slate-400 leading-relaxed">
+            <View style={styles.aboutCard}>
+              <Text style={styles.aboutTitle}>About</Text>
+              <Text style={styles.aboutBody}>
                 Sudoku Master v1.0.0{'\n\n'}
                 A premium Sudoku puzzle game with smooth animations and satisfying gameplay.
               </Text>
             </View>
 
             {/* Close Button */}
-            <Pressable
-              onPress={onClose}
-              className="bg-slate-700 rounded-xl py-3 items-center border border-slate-600"
-            >
-              <Text className="text-white font-semibold">Close</Text>
+            <Pressable onPress={onClose} style={styles.closeBtn}>
+              <Text style={styles.closeBtnText}>Close</Text>
             </Pressable>
           </ScrollView>
         </LinearGradient>
@@ -147,3 +136,105 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
     </Modal>
   );
 }
+
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  sheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderTopWidth: 1,
+    borderColor: '#334155',
+  },
+  scrollView: {
+    paddingHorizontal: 24,
+    paddingVertical: 24,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  closeIcon: {
+    color: '#FFFFFF',
+    fontSize: 24,
+  },
+  settingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#1E293B',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  settingTextGroup: {
+    flex: 1,
+  },
+  settingLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  settingSubLabel: {
+    fontSize: 12,
+    color: '#94A3B8',
+    marginTop: 4,
+  },
+  resetBtn: {
+    backgroundColor: 'rgba(127,29,29,0.3)',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#991B1B',
+    marginTop: 24,
+  },
+  resetBtnText: {
+    color: '#F87171',
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  aboutCard: {
+    backgroundColor: '#1E293B',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#334155',
+    marginTop: 24,
+    marginBottom: 24,
+  },
+  aboutTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginBottom: 8,
+  },
+  aboutBody: {
+    fontSize: 12,
+    color: '#94A3B8',
+    lineHeight: 18,
+  },
+  closeBtn: {
+    backgroundColor: '#334155',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#475569',
+  },
+  closeBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+});

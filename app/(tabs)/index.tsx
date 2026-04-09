@@ -283,13 +283,13 @@ const styles = StyleSheet.create({
 
   // ── Hero card ──
   heroCard: {
-    backgroundColor: 'rgba(255,255,255,0.7)',
+    backgroundColor: '#F5F0FF',
     borderRadius: 24,
     padding: 28,
     alignItems: 'center',
     marginBottom: 28,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.6)',
+    borderColor: 'rgba(105,69,199,0.12)',
     // shadow
     shadowColor: '#2f3336',
     shadowOffset: { width: 0, height: 8 },
@@ -395,11 +395,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: 'rgba(255,255,255,0.7)',
+    backgroundColor: '#F5F0FF',
     borderRadius: 20,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.6)',
+    borderColor: 'rgba(105,69,199,0.1)',
     shadowColor: '#2f3336',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,

@@ -1,6 +1,4 @@
-import { View, ViewProps } from 'react-native';
-import { BlurView } from 'expo-blur';
-import { cn } from '@/lib/utils';
+import { View, ViewProps, StyleSheet } from 'react-native';
 
 export interface GlassCardProps extends ViewProps {
   intensity?: number;
@@ -9,7 +7,9 @@ export interface GlassCardProps extends ViewProps {
 }
 
 /**
- * A card component with glassmorphism effect using BlurView
+ * A card component with glassmorphism effect.
+ * NOTE: BlurView removed — it renders as solid white on Android release builds.
+ * Uses a solid light background that matches the design intent on all platforms.
  */
 export function GlassCard({
   intensity = 80,
@@ -21,16 +21,24 @@ export function GlassCard({
 }: GlassCardProps) {
   return (
     <View
-      className={cn(
-        'rounded-2xl overflow-hidden border border-white border-opacity-10',
-        className
-      )}
-      style={style}
+      style={[styles.card, style]}
       {...props}
     >
-      <BlurView intensity={intensity} className={blurClassName}>
-        <View className="p-4">{children}</View>
-      </BlurView>
+      <View style={styles.inner}>{children}</View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  card: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: '#F5F0FF',
+    borderWidth: 1,
+    borderColor: 'rgba(105,69,199,0.1)',
+  },
+  inner: {
+    padding: 16,
+    backgroundColor: 'transparent',
+  },
+});
