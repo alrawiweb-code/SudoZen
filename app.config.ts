@@ -61,7 +61,12 @@ const config: ExpoConfig = {
   },
   plugins: [
     "expo-router",
-
+    [
+      "expo-audio",
+      {
+        microphonePermission: false,
+      },
+    ],
     [
       "expo-video",
       {

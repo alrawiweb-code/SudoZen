@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
-import { Audio } from 'expo-av';
+import { createAudioPlayer, setAudioModeAsync, AudioPlayer } from 'expo-audio';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Static require — MUST be a static path for bundler to include the asset
+const MUSIC_SOURCE = require('../assets/music.mp3');
 
 interface AudioContextType {
   isMusicEnabled: boolean;
@@ -15,69 +18,64 @@ const AudioContext = createContext<AudioContextType | undefined>(undefined);
 export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [isMusicEnabled, setIsMusicEnabledState] = useState<boolean>(true);
   const isMusicEnabledRef = useRef<boolean>(true);
+  const playerRef = useRef<AudioPlayer | null>(null);
+  const isTemporarilyPaused = useRef(false);
+  const isInitialized = useRef(false);
 
   const setIsMusicEnabled = (val: boolean) => {
     setIsMusicEnabledState(val);
     isMusicEnabledRef.current = val;
   };
 
-  const soundRef = useRef<Audio.Sound | null>(null);
-  const soundLoadedRef = useRef(false);
-  const isTemporarilyPaused = useRef(false);
-
   useEffect(() => {
     let isMounted = true;
 
-    (async () => {
+    const init = async () => {
       try {
-        console.log("Loading music...");
+        console.log('[Audio] Initializing expo-audio...');
 
-        // Step 1 — Configure audio session
-        await Audio.setAudioModeAsync({
+        // Configure audio session
+        await setAudioModeAsync({
           playsInSilentModeIOS: true,
         });
 
-        // Step 2 — Read user preference (default: enabled)
+        // Read user preference
         const enabledStr = await AsyncStorage.getItem('musicEnabled');
         const initiallyEnabled = enabledStr === null ? true : enabledStr === 'true';
-        if (isMounted) setIsMusicEnabled(initiallyEnabled);
+        console.log('[Audio] User preference:', initiallyEnabled);
 
-        // Step 3 — Load and immediately play if enabled
-        const { sound } = await Audio.Sound.createAsync(
-          require('../assets/music.mp3'),
-          {
-            shouldPlay: initiallyEnabled,
-            isLooping: true,
-            volume: 0.3,
-          }
-        );
+        if (!isMounted) return;
+        setIsMusicEnabled(initiallyEnabled);
 
-        console.log("Music loaded successfully");
+        // Create player with expo-audio (SDK 54 compatible)
+        const player = createAudioPlayer(MUSIC_SOURCE);
+        player.volume = 0.3;
+        player.loop = true;
 
-        if (!isMounted) {
-          sound.unloadAsync();
-          return;
-        }
+        playerRef.current = player;
+        isInitialized.current = true;
+        console.log('[Audio] Player created successfully');
 
-        soundRef.current = sound;
-        soundLoadedRef.current = true;
-
+        // Play immediately if enabled
         if (initiallyEnabled) {
-          console.log("Playing music...");
-          // Belt-and-suspenders: explicitly call play even though shouldPlay: true
-          await sound.playAsync().catch(() => {});
+          player.play();
+          console.log('[Audio] Playing music...');
         }
 
       } catch (e) {
-        console.log("[Audio] Error loading music:", e);
+        console.log('[Audio] Init error:', e);
       }
-    })();
+    };
+
+    init();
 
     return () => {
       isMounted = false;
-      soundRef.current?.unloadAsync();
-      soundRef.current = null;
-      soundLoadedRef.current = false;
+      if (playerRef.current) {
+        playerRef.current.remove();
+        playerRef.current = null;
+      }
+      isInitialized.current = false;
     };
   }, []);
 
@@ -86,43 +84,40 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     setIsMusicEnabled(nextState);
     await AsyncStorage.setItem('musicEnabled', nextState.toString());
 
-    if (!soundRef.current || !soundLoadedRef.current) return;
+    if (!playerRef.current || !isInitialized.current) return;
 
     if (nextState && !isTemporarilyPaused.current) {
-      await soundRef.current.playAsync().catch(() => {});
+      playerRef.current.play();
     } else {
-      await soundRef.current.pauseAsync().catch(() => {});
+      playerRef.current.pause();
     }
   }, []);
 
-  const pauseTemporarily = useCallback(async () => {
-    // Only pause if music is enabled — don't disrupt a disabled state
-    if (!isMusicEnabledRef.current) return;
+  const pauseTemporarily = useCallback(() => {
+    if (!isMusicEnabledRef.current) return; // Don't pause if already disabled
     isTemporarilyPaused.current = true;
-    if (soundRef.current && soundLoadedRef.current) {
-      await soundRef.current.pauseAsync().catch(() => {});
+    if (playerRef.current && isInitialized.current) {
+      playerRef.current.pause();
     }
   }, []);
 
-  const resumeTemporarily = useCallback(async () => {
+  const resumeTemporarily = useCallback(() => {
     isTemporarilyPaused.current = false;
-    if (!soundRef.current || !soundLoadedRef.current) return;
+    if (!playerRef.current || !isInitialized.current) return;
     if (!isMusicEnabledRef.current) return;
 
-    setTimeout(async () => {
-      try {
-        await soundRef.current?.playAsync();
-      } catch {}
+    setTimeout(() => {
+      if (playerRef.current && isMusicEnabledRef.current) {
+        playerRef.current.play();
+      }
     }, 300);
   }, []);
 
-  // Called from _layout when splash screen finishes — no-op now since
-  // shouldPlay:true handles it. Kept for API compatibility.
-  const playAfterSplash = useCallback(async () => {
-    if (!soundRef.current || !soundLoadedRef.current) return;
+  const playAfterSplash = useCallback(() => {
+    if (!playerRef.current || !isInitialized.current) return;
     if (!isMusicEnabledRef.current) return;
     if (isTemporarilyPaused.current) return;
-    await soundRef.current.playAsync().catch(() => {});
+    playerRef.current.play();
   }, []);
 
   return (
