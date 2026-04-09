@@ -34,7 +34,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         // Setup Audio session globally
         await Audio.setAudioModeAsync({
           playsInSilentModeIOS: true,
-          staysActiveInBackground: false,
         });
 
         // Get user preference
@@ -46,14 +45,17 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
         // Load sound instance manually using createAsync pattern
         const { sound } = await Audio.Sound.createAsync(
-          require('../assets/audio/music.mp3'),
+          require('../assets/music.mp3'),
           {
-            shouldPlay: initiallyEnabled,
+            shouldPlay: true,
             isLooping: true,
             volume: 0.3,
           }
         );
         
+        console.log("Music loaded");
+        console.log("Playing music");
+
         soundRef.current = sound;
         if (isMounted) {
           setSoundLoaded(true);

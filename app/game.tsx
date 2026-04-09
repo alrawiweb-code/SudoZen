@@ -505,7 +505,7 @@ function ToolActions({ theme, onHintPress, onNotesPress, onOptionsPress, trigger
           <View
             style={[
               styles.toolBtn,
-              { backgroundColor: tool.active ? theme.primary : '#FFFFFF' }, // Kept pure white for inactive states
+              { backgroundColor: tool.active ? theme.primary : '#F5F5F5' }, // Kept solid off-white for inactive states
             ]}
           >
             <Text style={[styles.toolIcon, { color: tool.active ? '#FFFFFF' : theme.text }]}>
@@ -842,7 +842,7 @@ const styles = StyleSheet.create({
   timerPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F5F5F5',
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 20,
@@ -1034,7 +1034,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   notesGuideCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F5F5F5',
     borderRadius: 24,
     padding: 24,
     alignItems: 'center',
@@ -1092,7 +1092,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.4)',
   },
   optionsCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F5F5F5',
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
     paddingHorizontal: 24,
@@ -1123,7 +1123,7 @@ const styles = StyleSheet.create({
   optionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: 'transparent',
     padding: 16,
     borderRadius: 20,
   },
