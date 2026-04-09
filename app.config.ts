@@ -23,6 +23,7 @@ const config: ExpoConfig = {
   scheme: env.scheme,
   userInterfaceStyle: "automatic",
   newArchEnabled: true,
+  assetBundlePatterns: ["assets/**/*"],
   ios: {
     supportsTablet: true,
     bundleIdentifier: env.iosBundleId,
@@ -60,12 +61,7 @@ const config: ExpoConfig = {
   },
   plugins: [
     "expo-router",
-    [
-      "expo-audio",
-      {
-        microphonePermission: "Allow $(PRODUCT_NAME) to access your microphone.",
-      },
-    ],
+
     [
       "expo-video",
       {
