@@ -12,7 +12,7 @@ const PRIMARY_LIGHT = '#9c7afe';
 const SURFACE = '#faf9fb';
 const ON_SURFACE = '#2f3336';
 const ON_SURFACE_VARIANT = '#5c5f63';
-const SURFACE_CARD = 'rgba(255,255,255,0.7)';
+const SURFACE_CARD = '#F5F0FF';
 const SURFACE_LOW = '#f3f3f6';
 const OUTLINE = '#e0e2e7';
 
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 24,
     paddingBottom: 16,
-    backgroundColor: 'rgba(250, 249, 251, 0.85)',
+    backgroundColor: SURFACE, // Use solid surface color instead of rgba
     zIndex: 10,
   },
   headerLeft: {
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
     right: -40,
     width: 130,
     height: 130,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(105,69,199,0.1)',
     borderRadius: 65,
   },
   streakEmoji: {
@@ -376,12 +376,7 @@ const styles = StyleSheet.create({
   },
   // Play States
   calendarDayMissed: {
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    backgroundColor: '#F3F4F6',
   },
   calendarDayTextMissed: {
     color: '#cbd5e1',
@@ -398,7 +393,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   calendarDayToday: {
-    backgroundColor: '#fff',
+    backgroundColor: '#EDE9FE',
     borderWidth: 2,
     borderColor: PRIMARY,
   },
@@ -421,11 +416,11 @@ const styles = StyleSheet.create({
   statCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: SURFACE_CARD,
+    backgroundColor: '#F5F0FF',
     padding: 20,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.7)',
+    borderColor: 'rgba(105,69,199,0.1)',
     shadowColor: ON_SURFACE,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.04,

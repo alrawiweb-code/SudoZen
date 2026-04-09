@@ -47,19 +47,23 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         const { sound } = await Audio.Sound.createAsync(
           require('../assets/music.mp3'),
           {
-            shouldPlay: true,
+            shouldPlay: initiallyEnabled, // Use preference directly
             isLooping: true,
             volume: 0.3,
           }
         );
         
-        console.log("Music loaded");
-        console.log("Playing music");
+        console.log("Music loaded at level: 0.3");
+        console.log("Playing state initialized:", initiallyEnabled);
 
         soundRef.current = sound;
         if (isMounted) {
           setSoundLoaded(true);
           soundLoadedRef.current = true;
+          // Explicitly ensure play if preference was on, in case shouldPlay was buggy
+          if (initiallyEnabled) {
+             await sound.playAsync().catch(e => console.log("Init play failed", e));
+          }
 
         } else {
           // If unmounted during load, clean it up
