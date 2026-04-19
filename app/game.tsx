@@ -7,10 +7,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAudio } from '@/lib/audio-context';
+import { useAppTheme, ThemeColors } from '@/lib/theme-context';
 
 
 // ─── Themes ────────────────────────────────────────────────────────────────────
-type ThemeContext = {
+type GameThemeContext = {
   gradient: readonly [string, string, string];
   primary: string;
   secondary: string;
@@ -19,37 +20,15 @@ type ThemeContext = {
   text: string;
 };
 
-const THEMES: Record<'beginner' | 'intermediate' | 'advanced', ThemeContext> = {
-  beginner: {
-    gradient: ['#F5F0FF', '#EDE7FF', '#DDE7FF'],
-    primary: '#7C6BFF',
-    secondary: '#B8AFFF',
-    gridBg: '#FFFFFF',
-    emptyCell: '#F3F4F6',
-    text: '#2D2D2D',
-  },
-  intermediate: {
-    gradient: ['#5D37BB', '#6945C7', '#9C7AFE'],
-    primary: '#9C7AFE',
-    secondary: '#C4B5FD',
-    gridBg: '#FFFFFF',
-    emptyCell: '#EDEEF1',
-    text: '#1F1F1F',
-  },
-  advanced: {
-    gradient: ['#0D0E10', '#13003D', '#22005F'],
-    primary: '#9C7AFE',
-    secondary: '#6945C7',
-    gridBg: '#FFFFFF',
-    emptyCell: '#E7E8EC',
-    text: '#1A1A1A',
-  },
-};
-
-function getTheme(difficulty?: string): ThemeContext {
-  if (difficulty === 'easy') return THEMES.beginner;
-  if (difficulty === 'medium') return THEMES.intermediate;
-  return THEMES.advanced; // hard, expert
+function getGameTheme(themeRef: ThemeColors, isDark: boolean): GameThemeContext {
+  return {
+    gradient: [themeRef.background, themeRef.background, themeRef.background],
+    primary: themeRef.highlight || themeRef.accent,
+    secondary: themeRef.textSecondary,
+    gridBg: themeRef.board || themeRef.card,
+    emptyCell: themeRef.cell || (isDark ? '#020617' : '#F3F4F6'),
+    text: themeRef.textPrimary,
+  };
 }
 
 const PLAYFUL_HINTS = [
@@ -86,7 +65,7 @@ function hexToRgba(hex: string, opacity: number) {
 }
 
 // ─── Top Bar & Timer ────────────────────────────────────────────────────────────
-function TopBar({ theme }: { theme: ThemeContext }) {
+function TopBar({ theme }: { theme: GameThemeContext }) {
   const router = useRouter();
   const { currentGame, elapsedTime } = useGame();
   const insets = useSafeAreaInsets();
@@ -103,7 +82,7 @@ function TopBar({ theme }: { theme: ThemeContext }) {
     : 'Loading';
 
   return (
-    <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 16) }]}>
+    <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 16), backgroundColor: theme.gridBg + 'E6' }]}>
       <View style={styles.topBarInner}>
         <Pressable
           onPress={() => router.back()}
@@ -116,7 +95,7 @@ function TopBar({ theme }: { theme: ThemeContext }) {
           Zen Level: {difficultyTitle}
         </Text>
 
-        <View style={styles.timerPill}>
+        <View style={[styles.timerPill, { backgroundColor: theme.emptyCell }]}>
           <Text style={[styles.timerIcon, { color: theme.primary }]}>⏱</Text>
           <Text style={[styles.timerText, { color: theme.primary }]}>
             {formatTime(elapsedTime)}
@@ -128,9 +107,9 @@ function TopBar({ theme }: { theme: ThemeContext }) {
 }
 
 // ─── Grid ──────────────────────────────────────────────────────────────────────
-function SudokuGrid({ theme, glowingCell, triggerHaptic }: { theme: ThemeContext, glowingCell: {row: number, col: number} | null, triggerHaptic: (style: any, type?: 'impact' | 'notification') => void }) {
+function SudokuGrid({ theme, glowingCell, triggerHaptic, isDark }: { theme: GameThemeContext; glowingCell: { row: number, col: number } | null; triggerHaptic: (style: any, type?: 'impact' | 'notification') => void; isDark: boolean }) {
   const { currentGame, selectedCell, selectCell, isPaused, resumeGame } = useGame();
-  
+
   // Glow animation ref
   const glowAnim = useRef(new Animated.Value(0)).current;
 
@@ -171,18 +150,18 @@ function SudokuGrid({ theme, glowingCell, triggerHaptic }: { theme: ThemeContext
       let textWeight: any = '500';
 
       if (isConflict) {
-        cellBg = 'rgba(249, 115, 134, 0.2)'; // Kept static error red tint
-        textColor = '#a8364b';
+        cellBg = isDark ? 'rgba(153, 27, 27, 0.4)' : 'rgba(249, 115, 134, 0.2)';
+        textColor = isDark ? '#F87171' : '#a8364b';
         textWeight = '800';
       } else if (isSelected) {
-        cellBg = hexToRgba(theme.primary, 0.2);
+        cellBg = hexToRgba(theme.primary, isDark ? 0.3 : 0.2);
         textColor = theme.primary;
         textWeight = '800';
       } else if (isSameValue) {
-        cellBg = hexToRgba(theme.primary, 0.15);
+        cellBg = hexToRgba(theme.primary, isDark ? 0.2 : 0.15);
         textColor = theme.primary;
       } else if (isInSelectedRowOrCol || isInSelectedBlock) {
-        cellBg = hexToRgba(theme.primary, 0.05);
+        cellBg = hexToRgba(theme.primary, isDark ? 0.1 : 0.05);
         if (!cell.isGiven) textColor = theme.primary;
       } else if (!cell.isGiven) {
         textColor = theme.primary;
@@ -193,22 +172,22 @@ function SudokuGrid({ theme, glowingCell, triggerHaptic }: { theme: ThemeContext
       }
 
       const isGlowing = glowingCell?.row === r && glowingCell?.col === c;
-      
+
       const isThickBottom = r === 2 || r === 5;
       const isThickRight = c === 2 || c === 5;
-      
+
       const borderStyles: any = {
         borderWidth: StyleSheet.hairlineWidth,
-        borderColor: 'rgba(150, 150, 150, 0.15)',
+        borderColor: isDark ? 'rgba(148, 163, 184, 0.15)' : 'rgba(150, 150, 150, 0.15)',
       };
-      
+
       if (isThickBottom) {
         borderStyles.borderBottomWidth = 2;
-        borderStyles.borderBottomColor = 'rgba(100, 100, 100, 0.4)';
+        borderStyles.borderBottomColor = isDark ? 'rgba(148, 163, 184, 0.4)' : 'rgba(100, 100, 100, 0.4)';
       }
       if (isThickRight) {
         borderStyles.borderRightWidth = 2;
-        borderStyles.borderRightColor = 'rgba(100, 100, 100, 0.4)';
+        borderStyles.borderRightColor = isDark ? 'rgba(148, 163, 184, 0.4)' : 'rgba(100, 100, 100, 0.4)';
       }
 
       rowCells.push(
@@ -223,10 +202,10 @@ function SudokuGrid({ theme, glowingCell, triggerHaptic }: { theme: ThemeContext
           ]}
         >
           {isGlowing && (
-             <Animated.View style={[StyleSheet.absoluteFillObject, { backgroundColor: theme.primary, opacity: glowAnim }]} />
+            <Animated.View style={[StyleSheet.absoluteFillObject, { backgroundColor: theme.primary, opacity: glowAnim }]} />
           )}
           {isSelected && (
-             <View style={[StyleSheet.absoluteFillObject, { borderColor: theme.primary, borderWidth: 2, zIndex: 20 }]} pointerEvents="none" />
+            <View style={[StyleSheet.absoluteFillObject, { borderColor: theme.primary, borderWidth: 2, zIndex: 20 }]} pointerEvents="none" />
           )}
           {cell.value !== 0 ? (
             <Text style={[styles.cellText, { color: textColor, fontWeight: textWeight }, isGlowing && { color: '#FFFFFF', zIndex: 10 }]}>
@@ -250,7 +229,7 @@ function SudokuGrid({ theme, glowingCell, triggerHaptic }: { theme: ThemeContext
         </Pressable>
       );
     }
-    
+
     rows.push(
       <View key={`row-${r}`} style={styles.row}>
         {rowCells}
@@ -263,8 +242,8 @@ function SudokuGrid({ theme, glowingCell, triggerHaptic }: { theme: ThemeContext
       <View style={[styles.gridInner, { backgroundColor: theme.gridBg }]}>
         {rows}
         {isPaused && (
-          <Pressable 
-            style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(255,255,255,0.85)', zIndex: 100, alignItems: 'center', justifyContent: 'center' }]}
+          <Pressable
+            style={[StyleSheet.absoluteFillObject, { backgroundColor: theme.gridBg + 'D9', zIndex: 100, alignItems: 'center', justifyContent: 'center' }]}
             onPress={resumeGame}
           >
             <Text style={{ fontSize: 24, fontWeight: '800', color: theme.primary, letterSpacing: 2 }}>PAUSED</Text>
@@ -277,7 +256,7 @@ function SudokuGrid({ theme, glowingCell, triggerHaptic }: { theme: ThemeContext
 }
 
 // ─── Hint Popup Component ───────────────────────────────────────────────────────
-function HintPopup({ text, visible, theme, onHide }: { text: string; visible: boolean; theme: ThemeContext, onHide: () => void }) {
+function HintPopup({ text, visible, theme, onHide }: { text: string; visible: boolean; theme: GameThemeContext; onHide: () => void }) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
 
@@ -318,10 +297,10 @@ function HintPopup({ text, visible, theme, onHide }: { text: string; visible: bo
     >
       <Pressable onPress={onHide} style={({ pressed }) => [
         styles.hintPopupCard,
-        { borderLeftColor: theme.primary },
+        { borderLeftColor: theme.primary, backgroundColor: theme.gridBg },
         pressed && { opacity: 0.9 }
       ]}>
-        <View style={styles.hintPopupIconBox}>
+        <View style={[styles.hintPopupIconBox, { backgroundColor: hexToRgba(theme.primary, 0.1) }]}>
           <Text style={[styles.hintPopupIcon, { color: theme.primary }]}>💡</Text>
         </View>
         <Text style={[styles.hintPopupText, { color: theme.text }]} numberOfLines={2}>
@@ -333,7 +312,7 @@ function HintPopup({ text, visible, theme, onHide }: { text: string; visible: bo
 }
 
 // ─── Notes Guide Popup ─────────────────────────────────────────────────────────
-function NotesGuidePopup({ visible, theme, onDismiss, onDisable }: { visible: boolean; theme: ThemeContext; onDismiss: () => void; onDisable: () => void }) {
+function NotesGuidePopup({ visible, theme, onDismiss, onDisable }: { visible: boolean; theme: GameThemeContext; onDismiss: () => void; onDisable: () => void }) {
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -349,11 +328,11 @@ function NotesGuidePopup({ visible, theme, onDismiss, onDisable }: { visible: bo
   }, [visible, fadeAnim, scaleAnim]);
 
   return (
-    <Animated.View 
-      pointerEvents={visible ? "auto" : "none"} 
+    <Animated.View
+      pointerEvents={visible ? "auto" : "none"}
       style={[styles.notesGuideOverlay, { opacity: fadeAnim }]}
     >
-      <Animated.View style={[styles.notesGuideCard, { transform: [{ scale: scaleAnim }] }]}>
+      <Animated.View style={[styles.notesGuideCard, { backgroundColor: theme.gridBg, transform: [{ scale: scaleAnim }] }]}>
         <View style={[styles.notesGuideIconBox, { backgroundColor: hexToRgba(theme.primary, 0.1) }]}>
           <Text style={styles.notesGuideIcon}>✏️</Text>
         </View>
@@ -362,15 +341,15 @@ function NotesGuidePopup({ visible, theme, onDismiss, onDisable }: { visible: bo
           Add small numbers to track possible answers. Tap again to remove them.
         </Text>
         <View style={{ width: '100%', gap: 12 }}>
-          <Pressable 
-            onPress={onDismiss} 
+          <Pressable
+            onPress={onDismiss}
             style={({ pressed }) => [styles.notesGuideBtn, { backgroundColor: theme.primary }, pressed && { opacity: 0.8 }]}
           >
             <Text style={styles.notesGuideBtnText}>Got it</Text>
           </Pressable>
-          <Pressable 
-            onPress={onDisable} 
-            style={({ pressed }) => [styles.notesGuideBtn, { backgroundColor: 'transparent', borderWidth: 1, borderColor: '#E5E7EB' }, pressed && { opacity: 0.5 }]}
+          <Pressable
+            onPress={onDisable}
+            style={({ pressed }) => [styles.notesGuideBtn, { backgroundColor: 'transparent', borderWidth: 1, borderColor: theme.secondary + '40' }, pressed && { opacity: 0.5 }]}
           >
             <Text style={[styles.notesGuideBtnText, { color: theme.secondary }]}>Never show again</Text>
           </Pressable>
@@ -381,7 +360,7 @@ function NotesGuidePopup({ visible, theme, onDismiss, onDisable }: { visible: bo
 }
 
 // ─── Options Popup ─────────────────────────────────────────────────────────────
-function OptionsPopup({ visible, theme, onResume, onPause, isPaused, onRestart, onQuit, onHowToPlay, hapticsEnabled, toggleHaptics }: any) {
+function OptionsPopup({ visible, theme, onResume, onPause, isPaused, onRestart, onQuit, onHowToPlay, hapticsEnabled, toggleHaptics, onThemeSelect }: any) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const { isMusicEnabled, toggleMusic } = useAudio();
@@ -403,10 +382,10 @@ function OptionsPopup({ visible, theme, onResume, onPause, isPaused, onRestart, 
   return (
     <Animated.View style={[styles.optionsOverlay, { opacity: fadeAnim }]} pointerEvents={visible ? "auto" : "none"}>
       <Pressable style={styles.optionsBackdrop} onPress={onResume} />
-      <Animated.View style={[styles.optionsCard, { transform: [{ translateY: slideAnim }] }]}>
-        <View style={styles.optionsHandle} />
+      <Animated.View style={[styles.optionsCard, { backgroundColor: theme.gridBg, transform: [{ translateY: slideAnim }] }]}>
+        <View style={[styles.optionsHandle, { backgroundColor: theme.secondary + '40' }]} />
         <Text style={[styles.optionsTitle, { color: theme.text }]}>Settings</Text>
-        
+
         <View style={styles.optionsList}>
           <Pressable style={styles.optionBtn} onPress={isPaused ? onResume : onPause}>
             <View style={[styles.optionIconBox, { backgroundColor: hexToRgba(theme.primary, 0.1) }]}>
@@ -414,14 +393,14 @@ function OptionsPopup({ visible, theme, onResume, onPause, isPaused, onRestart, 
             </View>
             <Text style={[styles.optionText, { color: theme.text }]}>{isPaused ? 'Resume Game' : 'Pause Game'}</Text>
           </Pressable>
-          
+
           <Pressable style={styles.optionBtn} onPress={onRestart}>
             <View style={[styles.optionIconBox, { backgroundColor: hexToRgba(theme.primary, 0.1) }]}>
               <Text style={styles.optionIcon}>🔄</Text>
             </View>
             <Text style={[styles.optionText, { color: theme.text }]}>Restart Puzzle</Text>
           </Pressable>
-          
+
           <Pressable style={styles.optionBtn} onPress={toggleMusic}>
             <View style={[styles.optionIconBox, { backgroundColor: hexToRgba(theme.primary, 0.1) }]}>
               <Text style={styles.optionIcon}>{isMusicEnabled ? '🔊' : '🔇'}</Text>
@@ -432,23 +411,22 @@ function OptionsPopup({ visible, theme, onResume, onPause, isPaused, onRestart, 
             </View>
           </Pressable>
 
-          <Pressable style={styles.optionBtn} onPress={() => {  if(hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); toggleHaptics(); }}>
-            <View style={[styles.optionIconBox, { backgroundColor: hexToRgba(theme.primary, 0.1) }]}>
-              <Text style={styles.optionIcon}>{hapticsEnabled ? '📳' : '📴'}</Text>
-            </View>
-            <View>
-              <Text style={[styles.optionText, { color: theme.text }]}>Sound FX</Text>
-              <Text style={[styles.optionSub, { color: theme.secondary }]}>{hapticsEnabled ? 'Haptics Active' : 'Haptics Off'}</Text>
-            </View>
-          </Pressable>
-          
+
+
           <Pressable style={styles.optionBtn} onPress={onHowToPlay}>
             <View style={[styles.optionIconBox, { backgroundColor: hexToRgba(theme.primary, 0.1) }]}>
               <Text style={styles.optionIcon}>📖</Text>
             </View>
             <Text style={[styles.optionText, { color: theme.text }]}>How to Play</Text>
           </Pressable>
-          
+
+          <Pressable style={styles.optionBtn} onPress={onThemeSelect}>
+            <View style={[styles.optionIconBox, { backgroundColor: hexToRgba(theme.primary, 0.1) }]}>
+              <Text style={styles.optionIcon}>🎨</Text>
+            </View>
+            <Text style={[styles.optionText, { color: theme.text }]}>Customize Theme</Text>
+          </Pressable>
+
           <Pressable style={styles.optionBtn} onPress={onQuit}>
             <View style={[styles.optionIconBox, { backgroundColor: 'rgba(249, 115, 134, 0.1)' }]}>
               <Text style={styles.optionIcon}>🚪</Text>
@@ -461,215 +439,215 @@ function OptionsPopup({ visible, theme, onResume, onPause, isPaused, onRestart, 
   );
 }
 
-// ─── Tools ─────────────────────────────────────────────────────────────────────
-function ToolActions({ theme, onHintPress, onNotesPress, onOptionsPress, triggerHaptic }: { theme: ThemeContext; onHintPress: () => void; onNotesPress: () => void; onOptionsPress: () => void, triggerHaptic: (style: any, type?: 'impact' | 'notification') => void }) {
-  const { eraseCell, isNotesMode } = useGame();
+      // ─── Tools ─────────────────────────────────────────────────────────────────────
+      function ToolActions({theme, onHintPress, onNotesPress, onOptionsPress, triggerHaptic}: {theme: GameThemeContext; onHintPress: () => void; onNotesPress: () => void; onOptionsPress: () => void; triggerHaptic: (style: any, type?: 'impact' | 'notification') => void }) {
+  const {eraseCell, isNotesMode} = useGame();
 
 
   const handleAction = (type: string) => {
     switch (type) {
       case 'erase':
-        eraseCell();
-        triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
-        break;
+      eraseCell();
+      triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+      break;
       case 'notes':
-        onNotesPress();
-        triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-        break;
+      onNotesPress();
+      triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+      break;
       case 'hint':
-        onHintPress();
-        triggerHaptic(Haptics.NotificationFeedbackType.Success, 'notification');
-        break;
+      onHintPress();
+      triggerHaptic(Haptics.NotificationFeedbackType.Success, 'notification');
+      break;
       case 'settings':
-        onOptionsPress();
-        triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-        break;
+      onOptionsPress();
+      triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+      break;
     }
   };
 
-  const tools = [
-    { id: 'notes', icon: '✎', label: 'Notes', active: isNotesMode },
-    { id: 'erase', icon: '⌫', label: 'Erase' },
-    { id: 'hint', icon: '💡', label: 'Hint' },
-    { id: 'settings', icon: '⚙', label: 'Options' },
-  ];
+      const tools = [
+      {id: 'notes', icon: '✎', label: 'Notes', active: isNotesMode },
+      {id: 'erase', icon: '⌫', label: 'Erase' },
+      {id: 'hint', icon: '💡', label: 'Hint' },
+      {id: 'settings', icon: '⚙', label: 'Options' },
+      ];
 
-  return (
-    <View style={styles.toolsContainer}>
-      {tools.map(tool => (
-        <Pressable
-          key={tool.id}
-          onPress={() => handleAction(tool.id)}
-          style={({ pressed }) => [styles.toolBtnParent, pressed && { opacity: 0.7 }]}
-        >
-          <View
-            style={[
-              styles.toolBtn,
-              { backgroundColor: tool.active ? theme.primary : '#F5F5F5' }, // Kept solid off-white for inactive states
-            ]}
+      return (
+      <View style={styles.toolsContainer}>
+        {tools.map(tool => (
+          <Pressable
+            key={tool.id}
+            onPress={() => handleAction(tool.id)}
+            style={({ pressed }) => [styles.toolBtnParent, pressed && { opacity: 0.7 }]}
           >
-            <Text style={[styles.toolIcon, { color: tool.active ? '#FFFFFF' : theme.text }]}>
-              {tool.icon}
-            </Text>
-          </View>
-          <Text style={[styles.toolLabel, { color: tool.active ? theme.primary : theme.secondary }]}>
-            {tool.label}
-          </Text>
-        </Pressable>
-      ))}
-    </View>
-  );
-}
-
-// ─── Number Pad ────────────────────────────────────────────────────────────────
-function NumberPad({ theme, triggerHaptic }: { theme: ThemeContext, triggerHaptic: (style: any, type?: 'impact' | 'notification') => void }) {
-  const { placeValue } = useGame();
-  const insets = useSafeAreaInsets();
-
-  const handlePress = (num: number) => {
-    placeValue(num);
-    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-  };
-
-  return (
-    <View style={[styles.numpadContainer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
-      {/* Kept glassmorphism per user's request */}
-      <View style={styles.numpadGlass}>
-        <View style={styles.numpadGrid}>
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
-            <Pressable
-              key={num}
-              onPress={() => handlePress(num)}
-              style={({ pressed }) => [
-                styles.numpadKey,
-                pressed && { backgroundColor: theme.primary, transform: [{ scale: 0.95 }] },
+            <View
+              style={[
+                styles.toolBtn,
+                { backgroundColor: tool.active ? theme.primary : theme.emptyCell },
               ]}
             >
-              {({ pressed }) => (
-                <Text
-                  style={[
-                    styles.numpadKeyText,
-                    { color: pressed ? '#FFFFFF' : theme.text },
-                  ]}
-                >
-                  {num}
-                </Text>
-              )}
-            </Pressable>
-          ))}
-        </View>
+              <Text style={[styles.toolIcon, { color: tool.active ? '#FFFFFF' : theme.text }]}>
+                {tool.icon}
+              </Text>
+            </View>
+            <Text style={[styles.toolLabel, { color: tool.active ? theme.primary : theme.secondary }]}>
+              {tool.label}
+            </Text>
+          </Pressable>
+        ))}
       </View>
-    </View>
-  );
+      );
 }
 
-// ─── Screen ────────────────────────────────────────────────────────────────────
-export default function GameScreen() {
+      // ─── Number Pad ────────────────────────────────────────────────────────────────
+      function NumberPad({theme, triggerHaptic}: {theme: GameThemeContext; triggerHaptic: (style: any, type?: 'impact' | 'notification') => void }) {
+  const {placeValue} = useGame();
+      const insets = useSafeAreaInsets();
+
+  const handlePress = (num: number) => {
+        placeValue(num);
+      triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+      return (
+      <View style={[styles.numpadContainer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
+        <View style={[styles.numpadGlass, { backgroundColor: theme.gridBg + 'D9' }]}>
+          <View style={styles.numpadGrid}>
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
+              <Pressable
+                key={num}
+                onPress={() => handlePress(num)}
+                style={({ pressed }) => [
+                  styles.numpadKey,
+                  pressed && { backgroundColor: theme.primary, transform: [{ scale: 0.95 }] },
+                ]}
+              >
+                {({ pressed }) => (
+                  <Text
+                    style={[
+                      styles.numpadKeyText,
+                      { color: pressed ? '#FFFFFF' : theme.text },
+                    ]}
+                  >
+                    {num}
+                  </Text>
+                )}
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      </View>
+      );
+}
+
+      // ─── Screen ────────────────────────────────────────────────────────────────────
+      export default function GameScreen() {
   const router = useRouter();
   const { currentGame, completeGame, startNewGame, useHint: triggerRealHint, selectedCell, toggleNotesMode, isPaused, pauseGame, resumeGame, restartGame } = useGame();
   const params = useLocalSearchParams<{ difficulty?: string }>();
   const [init, setInit] = useState(false);
   const { pauseTemporarily, resumeTemporarily } = useAudio();
+  const { theme: appTheme, boardTheme, isDark } = useAppTheme();
 
-  // Menu State
-  const [showOptions, setShowOptions] = useState(false);
+        // Menu State
+        const [showOptions, setShowOptions] = useState(false);
 
-  // Haptics Setup
-  const [hapticsEnabled, setHapticsEnabled] = useState(true);
+        // Haptics Setup
+        const [hapticsEnabled, setHapticsEnabled] = useState(true);
 
   useEffect(() => {
-    AsyncStorage.getItem('hapticsEnabled').then((val) => {
-      setHapticsEnabled(val === null ? true : val === 'true');
-    });
+          AsyncStorage.getItem('hapticsEnabled').then((val) => {
+            setHapticsEnabled(val === null ? true : val === 'true');
+          });
   }, []);
 
   const triggerHaptic = useCallback((style: any = Haptics.ImpactFeedbackStyle.Light, type: 'impact' | 'notification' = 'impact') => {
     if (!hapticsEnabled) return;
-    if (type === 'impact') {
-      Haptics.impactAsync(style);
+        if (type === 'impact') {
+          Haptics.impactAsync(style);
     } else {
-      Haptics.notificationAsync(style);
+          Haptics.notificationAsync(style);
     }
   }, [hapticsEnabled]);
 
   const handleToggleHaptics = () => {
     const nextState = !hapticsEnabled;
-    setHapticsEnabled(nextState);
-    AsyncStorage.setItem('hapticsEnabled', nextState.toString());
+        setHapticsEnabled(nextState);
+        AsyncStorage.setItem('hapticsEnabled', nextState.toString());
   };
 
-  // Audio Lifecycle
-  useFocusEffect(
+        // Audio Lifecycle
+        useFocusEffect(
     useCallback(() => {
-      pauseTemporarily();
+          pauseTemporarily();
       return () => {
-        resumeTemporarily();
+          resumeTemporarily();
       };
     }, [pauseTemporarily, resumeTemporarily])
-  );
+        );
 
-  // Notes Guide State
-  const [showNotesGuide, setShowNotesGuide] = useState(false);
-  const [disableNotesGuide, setDisableNotesGuide] = useState(false);
+        // Notes Guide State
+        const [showNotesGuide, setShowNotesGuide] = useState(false);
+        const [disableNotesGuide, setDisableNotesGuide] = useState(false);
 
   useEffect(() => {
-    AsyncStorage.getItem("disableNotesGuide").then((val) => {
-      if (val === "true") setDisableNotesGuide(true);
-    });
+          AsyncStorage.getItem("disableNotesGuide").then((val) => {
+            if (val === "true") setDisableNotesGuide(true);
+          });
   }, []);
 
   const handleNotesPress = () => {
-    toggleNotesMode();
-    if (!disableNotesGuide) {
-      setShowNotesGuide(true);
+          toggleNotesMode();
+        if (!disableNotesGuide) {
+          setShowNotesGuide(true);
     }
   };
 
   const dismissNotesGuide = () => {
-    setShowNotesGuide(false);
+          setShowNotesGuide(false);
   };
 
   const disableNotesGuideFeature = () => {
-    setShowNotesGuide(false);
-    setDisableNotesGuide(true);
-    AsyncStorage.setItem("disableNotesGuide", "true");
+          setShowNotesGuide(false);
+        setDisableNotesGuide(true);
+        AsyncStorage.setItem("disableNotesGuide", "true");
   };
 
-  // Hint State
-  const [hintCount, setHintCount] = useState(0);
-  const [showHint, setShowHint] = useState(false);
-  const [hintText, setHintText] = useState("");
-  const hintTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  
-  const [glowingCell, setGlowingCell] = useState<{row: number, col: number} | null>(null);
+        // Hint State
+        const [hintCount, setHintCount] = useState(0);
+        const [showHint, setShowHint] = useState(false);
+        const [hintText, setHintText] = useState("");
+        const hintTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+        const [glowingCell, setGlowingCell] = useState<{row: number, col: number} | null>(null);
 
   const triggerHint = () => {
     // Clear existing timer if any
     if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
 
-    const nextCount = hintCount + 1;
+        const nextCount = hintCount + 1;
     
     if (nextCount >= 3) {
-      // Real hint directly
-      triggerRealHint();
-      setShowHint(false); // Hide popup if currently visible
-      setHintCount(0); // Loop back for next 2 indirect hints
-      
+          // Real hint directly
+          triggerRealHint();
+        setShowHint(false); // Hide popup if currently visible
+        setHintCount(0); // Loop back for next 2 indirect hints
+
       // We will capture the selectedCell generated by triggerRealHint inside a setTimeout
       // to allow the context dispatch to propagate first.
       setTimeout(() => {
-         setGlowingCell({ row: -1, col: -1 }); // Trigger the glow effect via a fake mount, we rely on selectedCell updating
+          setGlowingCell({ row: -1, col: -1 }); // Trigger the glow effect via a fake mount, we rely on selectedCell updating
       }, 0);
     } else {
       // Indirect playful popup hint
       const randomHint = PLAYFUL_HINTS[Math.floor(Math.random() * PLAYFUL_HINTS.length)];
-      setHintText(randomHint);
-      setShowHint(true);
-      setHintCount(nextCount);
+        setHintText(randomHint);
+        setShowHint(true);
+        setHintCount(nextCount);
 
       // Auto-hide after 5 seconds
       hintTimeoutRef.current = setTimeout(() => {
-        setShowHint(false);
+          setShowHint(false);
       }, 5000);
     }
   };
@@ -677,11 +655,11 @@ export default function GameScreen() {
   useEffect(() => {
     // If glowing cell trigger was fired, use the actual selectedCell to mount
     if (glowingCell && glowingCell.row === -1 && selectedCell) {
-       setGlowingCell(selectedCell);
-       
+          setGlowingCell(selectedCell);
+
        // Clean up the glowing cell state after animation completes
        setTimeout(() => {
-         setGlowingCell(null);
+          setGlowingCell(null);
        }, 1500);
     }
   }, [glowingCell, selectedCell]);
@@ -694,77 +672,78 @@ export default function GameScreen() {
 
   useEffect(() => {
     if (!currentGame && !init) {
-      setInit(true);
-      const diff = (params.difficulty as any) ?? 'medium';
-      startNewGame(diff);
-      setHintCount(0); // Reset on new game
+          setInit(true);
+        const diff = (params.difficulty as any) ?? 'medium';
+        startNewGame(diff);
+        setHintCount(0); // Reset on new game
     }
   }, [currentGame, init, params.difficulty, startNewGame]);
 
   useEffect(() => {
     if (currentGame?.isComplete) {
-      completeGame();
-      setHintCount(0); // Reset on complete
-      Alert.alert('🎉 Puzzle Complete!', 'Congratulations! You solved it!', [
+          completeGame();
+        setHintCount(0); // Reset on complete
+        Alert.alert('🎉 Puzzle Complete!', 'Congratulations! You solved it!', [
         {
           text: 'Return Home',
           onPress: () => router.push('/'),
         },
-      ]);
+        ]);
     }
   }, [currentGame?.isComplete, completeGame, router]);
 
-  // Fallback to intermediate while loading
-  const theme = getTheme(currentGame?.difficulty);
+  // Segregate themes: Main UI relies on Light/Dark lock, Board UI utilizes Custom Theme
+  const mainTheme = getGameTheme(appTheme, isDark);
+  const boardUiTheme = getGameTheme(boardTheme, isDark);
 
   if (!currentGame) {
     return (
-      <LinearGradient
-        colors={['#5D37BB', '#6945C7']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[styles.root, styles.centerVertical]}
-      >
-        <Text style={[styles.loadingText, { color: '#FFFFFF' }]}>Preparing Zen Space...</Text>
-      </LinearGradient>
-    );
+        <LinearGradient
+          colors={['#5D37BB', '#6945C7']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.root, styles.centerVertical]}
+        >
+          <Text style={[styles.loadingText, { color: '#FFFFFF' }]}>Preparing Zen Space...</Text>
+        </LinearGradient>
+        );
   }
 
   return (
     <LinearGradient
-      colors={theme.gradient}
+      colors={mainTheme.gradient}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.root}
     >
-      <TopBar theme={theme} />
+      <TopBar theme={mainTheme} />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <SudokuGrid theme={theme} glowingCell={glowingCell} triggerHaptic={triggerHaptic} />
-        <ToolActions theme={theme} onHintPress={triggerHint} onNotesPress={handleNotesPress} onOptionsPress={() => setShowOptions(true)} triggerHaptic={triggerHaptic} />
+        <SudokuGrid theme={boardUiTheme} glowingCell={glowingCell} triggerHaptic={triggerHaptic} isDark={isDark} />
+        <ToolActions theme={mainTheme} onHintPress={triggerHint} onNotesPress={handleNotesPress} onOptionsPress={() => setShowOptions(true)} triggerHaptic={triggerHaptic} />
         <View style={{ height: 100 }} /> {/* Padding for Numpad */}
       </ScrollView>
-      <NumberPad theme={theme} triggerHaptic={triggerHaptic} />
+      <NumberPad theme={mainTheme} triggerHaptic={triggerHaptic} />
 
-      <HintPopup 
-        visible={showHint} 
-        text={hintText} 
-        theme={theme} 
-        onHide={() => setShowHint(false)} 
+      <HintPopup
+        visible={showHint}
+        text={hintText}
+        theme={mainTheme}
+        onHide={() => setShowHint(false)}
       />
 
       <NotesGuidePopup
         visible={showNotesGuide}
-        theme={theme}
+        theme={mainTheme}
         onDismiss={dismissNotesGuide}
         onDisable={disableNotesGuideFeature}
       />
 
       <OptionsPopup
         visible={showOptions}
-        theme={theme}
+        theme={mainTheme}
         isPaused={isPaused}
         hapticsEnabled={hapticsEnabled}
         toggleHaptics={handleToggleHaptics}
@@ -782,369 +761,359 @@ export default function GameScreen() {
           resumeGame();
         }}
         onQuit={() => {
-           setShowOptions(false);
-           router.push('/');
+          setShowOptions(false);
+          router.push('/');
         }}
         onHowToPlay={() => {
-           setShowOptions(false);
-           router.push('/learn');
+          setShowOptions(false);
+          router.push('/learn');
+        }}
+        onThemeSelect={() => {
+          setShowOptions(false);
+          router.push('/theme' as any);
         }}
       />
     </LinearGradient>
   );
 }
 
-// ─── Styles ────────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
+        // ─── Styles ────────────────────────────────────────────────────────────────────
+        const styles = StyleSheet.create({
+          root: {
+          flex: 1,
   },
-  centerVertical: {
-    justifyContent: 'center',
-    alignItems: 'center',
+        centerVertical: {
+          justifyContent: 'center',
+        alignItems: 'center',
   },
-  loadingText: {
-    fontWeight: '600',
-    fontSize: 16,
+        loadingText: {
+          fontWeight: '600',
+        fontSize: 16,
   },
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 24,
-    alignItems: 'center',
-    paddingBottom: 40,
+        scrollContent: {
+          paddingHorizontal: 16,
+        paddingTop: 24,
+        alignItems: 'center',
+        paddingBottom: 40,
   },
 
-  // ── Top Bar ──
-  topBar: {
+        // ── Top Bar ──
+        topBar: {
     width: '100%',
     paddingHorizontal: 24,
     paddingBottom: 16,
-    backgroundColor: 'rgba(250, 249, 251, 0.95)',
     zIndex: 50,
   },
-  topBarInner: {
+        topBarInner: {
+          flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+  },
+        backBtn: {
+          padding: 8,
+        marginLeft: -8,
+  },
+        backBtnIcon: {
+          fontSize: 24,
+        fontWeight: '600',
+  },
+        topBarTitle: {
+          fontSize: 16,
+        fontWeight: '800',
+  },
+        timerPill: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  backBtn: {
-    padding: 8,
-    marginLeft: -8,
-  },
-  backBtnIcon: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  topBarTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  timerPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F5F5F5',
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 20,
-    shadowColor: '#2f3336',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
     gap: 4,
   },
-  timerIcon: {
-    fontSize: 14,
+        timerIcon: {
+          fontSize: 14,
   },
-  timerText: {
-    fontSize: 14,
-    fontWeight: '600',
+        timerText: {
+          fontSize: 14,
+        fontWeight: '600',
   },
 
-  // ── Grid ──
-  gridOuter: {
+        // ── Grid ──
+        gridOuter: {
     width: '100%',
     maxWidth: 400,
     padding: 8,
     borderRadius: 16,
-    shadowColor: '#2f3336',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.04,
     shadowRadius: 32,
     elevation: 4,
     marginBottom: 32,
   },
-  gridInner: {
-    flexDirection: 'column',
-    width: '100%',
-    aspectRatio: 1,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: 'rgba(100, 100, 100, 0.4)',
-    overflow: 'hidden',
+        gridInner: {
+          flexDirection: 'column',
+        width: '100%',
+        aspectRatio: 1,
+        borderRadius: 4,
+        borderWidth: 2,
+        borderColor: 'rgba(100, 100, 100, 0.4)',
+        overflow: 'hidden',
   },
-  row: {
-    flex: 1,
-    flexDirection: 'row',
+        row: {
+          flex: 1,
+        flexDirection: 'row',
   },
-  cell: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+        cell: {
+          flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
   },
-  cellText: {
-    fontSize: 24,
+        cellText: {
+          fontSize: 24,
   },
-  notesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    width: '100%',
-    height: '100%',
-    padding: 2,
+        notesGrid: {
+          flexDirection: 'row',
+        flexWrap: 'wrap',
+        width: '100%',
+        height: '100%',
+        padding: 2,
   },
-  noteText: {
-    width: '33.3%',
-    height: '33.3%',
-    fontSize: 8,
-    textAlign: 'center',
-    lineHeight: 10,
-    fontWeight: '600',
+        noteText: {
+          width: '33.3%',
+        height: '33.3%',
+        fontSize: 8,
+        textAlign: 'center',
+        lineHeight: 10,
+        fontWeight: '600',
   },
 
-  // ── Tool Actions ──
-  toolsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    maxWidth: 360,
-    marginBottom: 40,
-    paddingHorizontal: 16,
+        // ── Tool Actions ──
+        toolsContainer: {
+          flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+        maxWidth: 360,
+        marginBottom: 40,
+        paddingHorizontal: 16,
   },
-  toolBtnParent: {
-    alignItems: 'center',
-    gap: 8,
+        toolBtnParent: {
+          alignItems: 'center',
+        gap: 8,
   },
-  toolBtn: {
+        toolBtn: {
     width: 56,
     height: 56,
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#2f3336',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
   },
-  toolIcon: {
-    fontSize: 24,
+        toolIcon: {
+          fontSize: 24,
   },
-  toolLabel: {
-    fontSize: 12,
-    fontWeight: '500',
+        toolLabel: {
+          fontSize: 12,
+        fontWeight: '500',
   },
 
-  // ── Number Pad ──
-  numpadContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    zIndex: 40,
+        // ── Number Pad ──
+        numpadContainer: {
+          position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        alignItems: 'center',
+        zIndex: 40,
   },
-  numpadGlass: {
+        numpadGlass: {
     width: '90%',
     maxWidth: 500,
-    backgroundColor: 'rgba(255, 255, 255, 0.85)',
     borderRadius: 24,
     padding: 16,
-    shadowColor: '#2f3336',
     shadowOffset: { width: 0, height: -8 },
     shadowOpacity: 0.04,
     shadowRadius: 32,
   },
-  numpadGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 8,
+        numpadGrid: {
+          flexDirection: 'row',
+        justifyContent: 'space-between',
+        gap: 8,
   },
-  numpadKey: {
-    flex: 1,
-    aspectRatio: 1,
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'transparent',
+        numpadKey: {
+          flex: 1,
+        aspectRatio: 1,
+        borderRadius: 999,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'transparent',
   },
-  numpadKeyText: {
-    fontSize: 20,
-    fontWeight: '700',
+        numpadKeyText: {
+          fontSize: 20,
+        fontWeight: '700',
   },
 
-  // ── Hint Popup ──
-  hintPopupContainer: {
-    position: 'absolute',
-    bottom: 120, // Above the numpad
-    left: 24,
-    right: 24,
-    zIndex: 100,
-    alignItems: 'center',
+        // ── Hint Popup ──
+        hintPopupContainer: {
+          position: 'absolute',
+        bottom: 120, // Above the numpad
+        left: 24,
+        right: 24,
+        zIndex: 100,
+        alignItems: 'center',
   },
-  hintPopupCard: {
+        hintPopupCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 20,
     paddingVertical: 14,
     paddingHorizontal: 18,
-    shadowColor: '#2f3336',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.1,
     shadowRadius: 20,
     borderLeftWidth: 4,
     maxWidth: 400,
   },
-  hintPopupIconBox: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(105, 69, 199, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
+        hintPopupIconBox: {
+          width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: 'rgba(105, 69, 199, 0.1)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
   },
-  hintPopupIcon: {
-    fontSize: 18,
+        hintPopupIcon: {
+          fontSize: 18,
   },
-  hintPopupText: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '600',
-    lineHeight: 20,
+        hintPopupText: {
+          flex: 1,
+        fontSize: 14,
+        fontWeight: '600',
+        lineHeight: 20,
   },
 
-  // ── Notes Guide ──
-  notesGuideOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    zIndex: 200,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
+        // ── Notes Guide ──
+        notesGuideOverlay: {
+          ...StyleSheet.absoluteFillObject,
+          backgroundColor: 'rgba(0,0,0,0.4)',
+        zIndex: 200,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 24,
   },
-  notesGuideCard: {
-    backgroundColor: '#F5F5F5',
+        notesGuideCard: {
     borderRadius: 24,
     padding: 24,
     alignItems: 'center',
     width: '100%',
     maxWidth: 340,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.15,
     shadowRadius: 20,
     elevation: 20,
   },
-  notesGuideIconBox: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
+        notesGuideIconBox: {
+          width: 56,
+        height: 56,
+        borderRadius: 28,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 16,
   },
-  notesGuideIcon: {
-    fontSize: 24,
+        notesGuideIcon: {
+          fontSize: 24,
   },
-  notesGuideTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    marginBottom: 8,
-    textAlign: 'center',
+        notesGuideTitle: {
+          fontSize: 20,
+        fontWeight: '800',
+        marginBottom: 8,
+        textAlign: 'center',
   },
-  notesGuideDesc: {
-    fontSize: 15,
-    lineHeight: 22,
-    textAlign: 'center',
-    marginBottom: 24,
+        notesGuideDesc: {
+          fontSize: 15,
+        lineHeight: 22,
+        textAlign: 'center',
+        marginBottom: 24,
   },
-  notesGuideBtn: {
-    width: '100%',
-    paddingVertical: 14,
-    borderRadius: 16,
-    alignItems: 'center',
+        notesGuideBtn: {
+          width: '100%',
+        paddingVertical: 14,
+        borderRadius: 16,
+        alignItems: 'center',
   },
-  notesGuideBtnText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '700',
+        notesGuideBtnText: {
+          color: '#FFF',
+        fontSize: 16,
+        fontWeight: '700',
   },
 
-  // ── Options Menu ──
-  optionsOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 200,
-    justifyContent: 'flex-end',
+        // ── Options Menu ──
+        optionsOverlay: {
+          ...StyleSheet.absoluteFillObject,
+          zIndex: 200,
+        justifyContent: 'flex-end',
   },
-  optionsBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+        optionsBackdrop: {
+          ...StyleSheet.absoluteFillObject,
+          backgroundColor: 'rgba(0,0,0,0.4)',
   },
-  optionsCard: {
-    backgroundColor: '#F5F5F5',
+        optionsCard: {
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
     paddingHorizontal: 24,
     paddingTop: 12,
     paddingBottom: 40,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: -10 },
     shadowOpacity: 0.1,
     shadowRadius: 20,
     elevation: 20,
   },
-  optionsHandle: {
+        optionsHandle: {
     width: 40,
     height: 5,
-    backgroundColor: '#E5E7EB',
     borderRadius: 3,
     alignSelf: 'center',
     marginBottom: 24,
   },
-  optionsTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    marginBottom: 20,
+        optionsTitle: {
+          fontSize: 22,
+        fontWeight: '800',
+        marginBottom: 20,
   },
-  optionsList: {
-    gap: 16,
+        optionsList: {
+          gap: 16,
   },
-  optionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-    padding: 16,
-    borderRadius: 20,
+        optionBtn: {
+          flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'transparent',
+        padding: 16,
+        borderRadius: 20,
   },
-  optionIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 16,
+        optionIconBox: {
+          width: 40,
+        height: 40,
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 16,
   },
-  optionIcon: {
-    fontSize: 18,
+        optionIcon: {
+          fontSize: 18,
   },
-  optionText: {
-    fontSize: 16,
-    fontWeight: '700',
+        optionText: {
+          fontSize: 16,
+        fontWeight: '700',
   },
-  optionSub: {
-    fontSize: 12,
-    fontWeight: '500',
-    marginTop: 2,
+        optionSub: {
+          fontSize: 12,
+        fontWeight: '500',
+        marginTop: 2,
   },
 });

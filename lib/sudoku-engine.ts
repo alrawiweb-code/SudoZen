@@ -247,6 +247,9 @@ export function placeNumber(
     timestamp: Date.now(),
   });
 
+  // Re-evaluate entire board correctness to resolve any ghost conflicts
+  updateAllCellsCorrectness(grid);
+
   // Check if puzzle is complete
   const isComplete = checkCompletion(grid);
   grid.isComplete = isComplete;
@@ -290,6 +293,21 @@ function isCorrectPlacement(grid: SudokuGrid, row: number, col: number): boolean
 }
 
 /**
+ * Re-evaluate correctness for all filled cells on the board.
+ * Crucial to fix 'ghost conflicts' when the user erases a conflicting cell.
+ */
+export function updateAllCellsCorrectness(grid: SudokuGrid): void {
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      const cell = grid.cells[r][c];
+      if (cell.value !== 0) {
+        cell.isCorrect = isCorrectPlacement(grid, r, c);
+      }
+    }
+  }
+}
+
+/**
  * Clear a cell
  */
 export function clearCell(grid: SudokuGrid, row: number, col: number): void {
@@ -305,6 +323,9 @@ export function clearCell(grid: SudokuGrid, row: number, col: number): void {
       value: 0,
       timestamp: Date.now(),
     });
+    
+    // Re-evaluate board correctness to clear ghost conflicts
+    updateAllCellsCorrectness(grid);
   }
 }
 
@@ -418,6 +439,7 @@ export function undoMove(grid: SudokuGrid): void {
   cell.isCorrect = false;
   cell.notes.clear();
 
+  updateAllCellsCorrectness(grid);
   grid.isComplete = false;
 }
 

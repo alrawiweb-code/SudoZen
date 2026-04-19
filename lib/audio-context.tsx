@@ -36,7 +36,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
         // Configure audio session
         await setAudioModeAsync({
-          playsInSilentModeIOS: true,
+          playsInSilentMode: true,
         });
 
         // Read user preference

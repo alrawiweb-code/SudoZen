@@ -13,3 +13,14 @@ import { twMerge } from "tailwind-merge";
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
+
+/**
+ * Safely format a Date object to YYYY-MM-DD using exact local device time,
+ * avoiding the drift associated with standard UTC-forced ISO conversions.
+ */
+export function toLocalDateString(date: Date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}

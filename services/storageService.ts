@@ -21,13 +21,11 @@ const KEYS = {
 // App settings
 // ---------------------------------------------------------------------------
 export interface AppSettings {
-  soundEnabled: boolean;
   hapticsEnabled: boolean;
   notificationsEnabled: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  soundEnabled: true,
   hapticsEnabled: true,
   notificationsEnabled: true,
 };

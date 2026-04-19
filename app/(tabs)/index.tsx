@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   ScrollView,
   Text,
@@ -6,6 +6,7 @@ import {
   Pressable,
   StyleSheet,
   Platform,
+  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useGame } from '@/lib/game-context';
@@ -13,6 +14,10 @@ import { Difficulty } from '@/lib/sudoku-engine';
 import { LinearGradient } from 'expo-linear-gradient';
 import { generatePuzzleFromDate } from '@/services/puzzleService';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAppTheme } from '@/lib/theme-context';
+import { BlurView } from 'expo-blur';
+import { StreakTracker } from '@/components/streak-tracker';
+
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -27,34 +32,63 @@ const DIFFICULTIES: { key: Difficulty; label: string }[] = [
 interface DifficultyPillsProps {
   active: Difficulty;
   onSelect: (d: Difficulty) => void;
+  onLockedPress: (d: Difficulty) => void;
+  stats: any;
 }
 
-function DifficultyPills({ active, onSelect }: DifficultyPillsProps) {
+function DifficultyPills({ active, onSelect, onLockedPress, stats }: DifficultyPillsProps) {
+  const { theme } = useAppTheme();
+
+  const isLocked = useCallback((key: Difficulty) => {
+    if (key === 'easy') return false;
+    if (key === 'medium') return stats.difficultyStats.easy.won === 0;
+    if (key === 'hard') return stats.difficultyStats.medium.won === 0;
+    return false;
+  }, [stats]);
+
   return (
     <View style={styles.pillRow}>
       {DIFFICULTIES.map(({ key, label }) => {
         const isActive = active === key;
+        const locked = isLocked(key);
+
         return (
           <Pressable
             key={key}
-            onPress={() => onSelect(key)}
+            onPress={() => (locked ? onLockedPress(key) : onSelect(key))}
             style={({ pressed }) => [
               styles.pill,
               isActive ? styles.pillActive : styles.pillInactive,
-              pressed && { opacity: 0.75, transform: [{ scale: 0.97 }] },
+              // Background color memoization equivalent (inline but stable mapping)
+              !isActive && { 
+                backgroundColor: theme.background === '#0F172A' ? '#1E293B' : '#E5E7EB' 
+              },
+              locked && { opacity: 0.6 },
+              pressed && !locked && { opacity: 0.75, transform: [{ scale: 0.97 }] },
+              pressed && locked && { transform: [{ translateX: 2 }] },
             ]}
           >
-            {isActive ? (
+            {isActive && !locked ? (
               <LinearGradient
-                colors={['#6945c7', '#9c7afe']}
+                colors={[theme.accent, theme.accent]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.pillGradient}
               >
-                <Text style={styles.pillActiveText}>{label}</Text>
+                <Text style={styles.pillActiveText} numberOfLines={1}>{label}</Text>
               </LinearGradient>
             ) : (
-              <Text style={styles.pillInactiveText}>{label}</Text>
+              <View style={styles.pillContent}>
+                <Text 
+                  style={[styles.pillInactiveText, { color: theme.textPrimary }]} 
+                  numberOfLines={1}
+                >
+                  {label}
+                </Text>
+                {locked && (
+                  <Text style={{ fontSize: 12, marginLeft: 4 }}>🔒</Text>
+                )}
+              </View>
             )}
           </Pressable>
         );
@@ -63,67 +97,136 @@ function DifficultyPills({ active, onSelect }: DifficultyPillsProps) {
   );
 }
 
+// ─── Locked level popup ────────────────────────────────────────────────────────
+
+function LockedLevelPopup({ visible, difficulty, onHide, onGoToBeginner }: { 
+  visible: boolean; 
+  difficulty: Difficulty | null; 
+  onHide: () => void;
+  onGoToBeginner?: () => void;
+}) {
+  const { theme } = useAppTheme();
+  
+  if (!difficulty) return null;
+
+  const content = {
+    medium: {
+      title: "Level Locked 🔒",
+      message: "Complete Beginner level to unlock Intermediate.",
+      fun: "You must master the basics before advancing your mind 🧘",
+      target: "Beginner"
+    },
+    hard: {
+      title: "Level Locked 🔒",
+      message: "Complete Intermediate level to unlock Advanced.",
+      fun: "A sharp mind requires steady progression. Calm your spirit first 🧘",
+      target: "Intermediate"
+    }
+  }[difficulty as 'medium' | 'hard'];
+
+  return (
+    <Modal transparent visible={visible} animationType="fade">
+      <View style={styles.modalOverlay}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onHide} />
+        
+        <View style={styles.modalContentWrapper}>
+          <BlurView intensity={30} tint={theme.background === '#0F172A' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
+          <View style={[styles.modalContent, { backgroundColor: theme.card + 'D9' }]}>
+            <View style={[styles.lockCircle, { backgroundColor: theme.accent + '20' }]}>
+              <Text style={{ fontSize: 32 }}>🔒</Text>
+            </View>
+            
+            <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>{content?.title}</Text>
+            <Text style={[styles.modalMessage, { color: theme.textSecondary }]}>{content?.message}</Text>
+            <Text style={[styles.modalFun, { color: theme.accent }]}>{content?.fun}</Text>
+            
+            <Pressable
+              onPress={onHide}
+              style={({ pressed }) => [
+                styles.modalBtn,
+                { backgroundColor: theme.accent },
+                pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] }
+              ]}
+            >
+              <View style={styles.btnGlow} />
+              <Text style={styles.modalBtnText}>OK</Text>
+            </Pressable>
+
+            {onGoToBeginner && (
+              <Pressable
+                onPress={onGoToBeginner}
+                style={({ pressed }) => [
+                  styles.modalSubBtn,
+                  pressed && { opacity: 0.6 }
+                ]}
+              >
+                <Text style={[styles.modalSubBtnText, { color: theme.textSecondary }]}>
+                  Try {content?.target}
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 // ─── Hero card (Today's Puzzle) ────────────────────────────────────────────────
 
 function HeroCard({ onPlay }: { onPlay: () => void }) {
+  const { theme } = useAppTheme();
   return (
-    <View style={styles.heroCard}>
-      {/* Icon circle */}
-      <View style={styles.heroIconCircle}>
-        <Text style={styles.heroIcon}>🧘</Text>
-      </View>
+    <View 
+      style={styles.heroCardContainer}
+      renderToHardwareTextureAndroid={true}
+      shouldRasterizeIOS={true}
+    >
+      {/* Background Glow Layer */}
+      <LinearGradient
+        colors={[theme.accent + '40', 'transparent']}
+        style={styles.heroGlow}
+      />
+      
+      <View style={[styles.heroCard, { backgroundColor: theme.card, borderColor: theme.accent + '20' }]}>
+        {/* Icon circle */}
+        <View style={[styles.heroIconCircle, { backgroundColor: theme.accent + '20' }]}>
+          <Text style={styles.heroIcon}>🧘</Text>
+        </View>
 
-      <Text style={styles.heroTitle}>Today{"'"}s Puzzle</Text>
-      <Text style={styles.heroSubtitle}>
-        Train your brain daily with a curated zen experience.
-      </Text>
+        <Text style={[styles.heroTitle, { color: theme.textPrimary }]}>Today{"'"}s Puzzle</Text>
+        <Text style={[styles.heroSubtitle, { color: theme.textSecondary }]}>
+          Train your brain daily with a curated zen experience.
+        </Text>
 
-      {/* Play Now button */}
-      <Pressable
-        onPress={onPlay}
-        style={({ pressed }) => [
-          styles.heroButtonWrapper,
-          pressed && { opacity: 0.85, transform: [{ scale: 0.97 }] },
-        ]}
-      >
-        <LinearGradient
-          colors={['#6945c7', '#9c7afe']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.heroButton}
+        {/* Play Now button with Glow */}
+        <View 
+          style={styles.heroButtonGlowContainer}
+          renderToHardwareTextureAndroid={true}
+          shouldRasterizeIOS={true}
         >
-          <Text style={styles.heroButtonText}>Play Now</Text>
-        </LinearGradient>
-      </Pressable>
-    </View>
-  );
-}
-
-// ─── Stat mini-card ────────────────────────────────────────────────────────────
-
-function StatCard({
-  icon,
-  label,
-  value,
-  accent,
-}: {
-  icon: string;
-  label: string;
-  value: string;
-  accent: string;
-}) {
-  return (
-    <View style={styles.statCard}>
-      <View style={[styles.statIconCircle, { backgroundColor: accent }]}>
-        <Text style={styles.statIcon}>{icon}</Text>
-      </View>
-      <View>
-        <Text style={styles.statLabel}>{label}</Text>
-        <Text style={styles.statValue}>{value}</Text>
+          <Pressable
+            onPress={onPlay}
+            style={({ pressed }) => [
+              styles.heroButtonWrapper,
+              pressed && { opacity: 0.85, transform: [{ scale: 0.97 }] },
+            ]}
+          >
+            <LinearGradient
+              colors={['#d0bcff', theme.accent]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.heroButton}
+            >
+              <Text style={styles.heroButtonText}>Play Now</Text>
+            </LinearGradient>
+          </Pressable>
+        </View>
       </View>
     </View>
   );
 }
+
 
 // ─── Home Screen ───────────────────────────────────────────────────────────────
 
@@ -131,34 +234,44 @@ export default function HomeScreen() {
   const router = useRouter();
   const { startNewGame, loadGame, stats } = useGame();
   const insets = useSafeAreaInsets();
+  const { theme } = useAppTheme();
 
-  // Selected difficulty pill (defaults to medium)
-  const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>('medium');
+  // Selected difficulty pill (defaults to easy if medium is locked)
+  const initialDifficulty: Difficulty = stats.difficultyStats.easy.won > 0 ? 'medium' : 'easy';
+  const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>(initialDifficulty);
+  
+  // Locked Level State
+  const [lockedTarget, setLockedTarget] = useState<Difficulty | null>(null);
 
   // ── handlers (all original logic, untouched) ──
-  const handlePlayDaily = () => {
+  const handlePlayDaily = useCallback(() => {
     const dailyPuzzle = generatePuzzleFromDate(new Date(), 'medium');
     loadGame(dailyPuzzle);
     router.push('../game');
-  };
+  }, [loadGame, router]);
 
-  const handleSelectDifficulty = (d: Difficulty) => {
+  const handleSelectDifficulty = useCallback((d: Difficulty) => {
     setSelectedDifficulty(d);
     startNewGame(d);
     router.push({ pathname: '../game', params: { difficulty: d } });
-  };
+  }, [startNewGame, router]);
 
-  const handleViewStats = () => {
+  const handleLockedPress = useCallback((d: Difficulty) => {
+    setLockedTarget(d);
+  }, []);
+
+  const handleViewStats = useCallback(() => {
     router.push('../stats');
-  };
+  }, [router]);
 
   const paddingTop = Platform.OS === 'web' ? 24 : insets.top + 8;
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { backgroundColor: theme.background }]}>
       {/* Background ambient orbs */}
-      <View style={styles.orbTopLeft} />
-      <View style={styles.orbBottomRight} />
+      <View style={[styles.orbTopLeft, { backgroundColor: theme.accent + '15' }]} />
+      <View style={[styles.orbBottomRight, { backgroundColor: theme.accent + '10' }]} />
+      <View style={styles.ambientGlow} />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingTop }]}
@@ -166,8 +279,8 @@ export default function HomeScreen() {
       >
         {/* ── Header ── */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>SudoZen</Text>
-          <Text style={styles.headerTagline}>MINDFUL LOGIC</Text>
+          <Text style={[styles.headerTitle, { color: theme.accent }]}>SudoZen</Text>
+          <Text style={[styles.headerTagline, { color: theme.textSecondary }]}>MINDFUL LOGIC</Text>
         </View>
 
         {/* ── Hero Card ── */}
@@ -178,22 +291,33 @@ export default function HomeScreen() {
         <DifficultyPills
           active={selectedDifficulty}
           onSelect={handleSelectDifficulty}
+          onLockedPress={handleLockedPress}
+          stats={stats}
         />
 
-        {/* ── Stats ── */}
-        <View style={styles.statsRow}>
-          <StatCard
-            icon="🔥"
-            label="Streak"
-            value={`${stats.winStreak} days`}
-            accent="rgba(252,163,174,0.18)"
-          />
-          <StatCard
-            icon="🧩"
-            label="Games"
-            value={`${stats.gamesPlayed} Played`}
-            accent="rgba(156,122,254,0.15)"
-          />
+        <LockedLevelPopup
+          visible={!!lockedTarget}
+          difficulty={lockedTarget}
+          onHide={() => setLockedTarget(null)}
+          onGoToBeginner={() => {
+            setLockedTarget(null);
+            handleSelectDifficulty('easy');
+          }}
+        />
+
+        {/* ── Streak Tracker (full animated milestone card) ── */}
+        {/* streakDays is driven by real puzzle completions via game-context */}
+        <StreakTracker streakDays={stats.winStreak} />
+
+        {/* ── Games played mini-card ── */}
+        <View style={styles.gamesCard}>
+          <View style={styles.gamesIconCircle}>
+            <Text style={styles.gamesIcon}>🧩</Text>
+          </View>
+          <View>
+            <Text style={styles.gamesLabel}>GAMES PLAYED</Text>
+            <Text style={[styles.gamesValue, { color: theme.textPrimary }]}>{stats.gamesPlayed}</Text>
+          </View>
         </View>
 
         {/* ── Divider ── */}
@@ -214,7 +338,7 @@ export default function HomeScreen() {
             pressed && { opacity: 0.65 },
           ]}
         >
-          <Text style={styles.statsLinkText}>View Full Statistics →</Text>
+          <Text style={[styles.statsLinkText, { color: theme.accent }]}>View Full Statistics →</Text>
         </Pressable>
 
         {/* bottom breathing room */}
@@ -226,16 +350,9 @@ export default function HomeScreen() {
 
 // ─── Styles ────────────────────────────────────────────────────────────────────
 
-const PRIMARY = '#6945c7';
-const PRIMARY_LIGHT = '#9c7afe';
-const SURFACE = '#faf9fb';
-const ON_SURFACE = '#2f3336';
-const ON_SURFACE_VARIANT = '#5c5f63';
-
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: SURFACE,
   },
   // background orbs
   orbTopLeft: {
@@ -270,24 +387,34 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 26,
     fontWeight: '800',
-    color: PRIMARY,
     letterSpacing: -0.3,
   },
   headerTagline: {
     fontSize: 10,
     fontWeight: '300',
-    color: '#9ca3af',
     letterSpacing: 5,
     marginTop: 2,
   },
 
   // ── Hero card ──
+  heroCardContainer: {
+    position: 'relative',
+    marginBottom: 28,
+  },
+  heroGlow: {
+    position: 'absolute',
+    top: -12,
+    left: -12,
+    right: -12,
+    bottom: -12,
+    borderRadius: 36,
+    opacity: 0.2,
+  },
   heroCard: {
     backgroundColor: '#F5F0FF',
     borderRadius: 24,
     padding: 28,
     alignItems: 'center',
-    marginBottom: 28,
     borderWidth: 1,
     borderColor: 'rgba(105,69,199,0.12)',
     // shadow
@@ -312,17 +439,23 @@ const styles = StyleSheet.create({
   heroTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: ON_SURFACE,
     marginBottom: 8,
     textAlign: 'center',
   },
   heroSubtitle: {
     fontSize: 14,
     fontWeight: '300',
-    color: ON_SURFACE_VARIANT,
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 24,
+  },
+  heroButtonGlowContainer: {
+    width: '100%',
+    shadowColor: '#a078ff',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 8,
   },
   heroButtonWrapper: {
     width: '100%',
@@ -354,80 +487,85 @@ const styles = StyleSheet.create({
   // ── Difficulty pills ──
   pillRow: {
     flexDirection: 'row',
-    gap: 8,
+    justifyContent: 'space-between',
+    width: '100%',
+    gap: 10,
     marginBottom: 28,
   },
   pill: {
     flex: 1,
-    borderRadius: 50,
+    minHeight: 46,
+    borderRadius: 999,
     overflow: 'hidden',
+    alignItems: 'stretch',
+    justifyContent: 'center',
   },
   pillActive: {},
   pillInactive: {
-    backgroundColor: '#f3f3f6',
-    paddingVertical: 14,
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  pillContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    paddingVertical: 14,
   },
   pillGradient: {
+    flex: 1,
     paddingVertical: 14,
     alignItems: 'center',
-    borderRadius: 50,
+    justifyContent: 'center',
+    borderRadius: 999,
   },
   pillActiveText: {
     color: '#fff',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
+    textAlign: 'center',
   },
   pillInactiveText: {
-    color: ON_SURFACE,
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 
-  // ── Stats row ──
-  statsRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 32,
-  },
-  statCard: {
-    flex: 1,
+  // ── Games mini-card ──
+  gamesCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#F5F0FF',
     borderRadius: 20,
     padding: 16,
+    marginTop: 12,
+    marginBottom: 20,
+    backgroundColor: 'rgba(156,122,254,0.10)',
     borderWidth: 1,
-    borderColor: 'rgba(105,69,199,0.1)',
-    shadowColor: '#2f3336',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 2,
+    borderColor: 'rgba(105,69,199,0.12)',
   },
-  statIconCircle: {
+  gamesIconCircle: {
     width: 40,
     height: 40,
     borderRadius: 20,
+    backgroundColor: 'rgba(156,122,254,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  statIcon: {
-    fontSize: 20,
-  },
-  statLabel: {
+  gamesIcon: { fontSize: 20 },
+  gamesLabel: {
     fontSize: 9,
     fontWeight: '700',
-    color: ON_SURFACE_VARIANT,
+    color: '#9ca3af',
     letterSpacing: 2,
     textTransform: 'uppercase',
     marginBottom: 2,
   },
-  statValue: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: ON_SURFACE,
+  gamesValue: {
+    fontSize: 18,
+    fontWeight: '800',
   },
 
   // ── Divider ──
@@ -449,7 +587,98 @@ const styles = StyleSheet.create({
   statsLinkText: {
     fontSize: 14,
     fontWeight: '600',
-    color: PRIMARY_LIGHT,
     letterSpacing: 0.2,
+  },
+
+  // ── Modal Styles ──
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalContentWrapper: {
+    width: '100%',
+    maxWidth: 340,
+    borderRadius: 32,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 10,
+  },
+  modalContent: {
+    padding: 32,
+    alignItems: 'center',
+  },
+  lockCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: 16,
+    lineHeight: 22,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  modalFun: {
+    fontSize: 14,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginBottom: 28,
+    fontWeight: '600',
+    opacity: 0.8,
+  },
+  modalBtn: {
+    width: '100%',
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+    marginBottom: 12,
+    position: 'relative',
+  },
+  btnGlow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#fff',
+    opacity: 0.15,
+    borderRadius: 16,
+  },
+  modalBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  modalSubBtn: {
+    paddingVertical: 8,
+  },
+  modalSubBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  ambientGlow: {
+    position: 'absolute',
+    top: -50,
+    right: -50,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: '#d0bcff',
+    opacity: 0.08,
   },
 });

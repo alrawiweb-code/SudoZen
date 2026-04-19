@@ -4,9 +4,10 @@ import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
-import { Platform } from "react-native";
+import { Platform, AppState } from "react-native";
 import "@/lib/_core/nativewind-pressable";
 import { ThemeProvider } from "@/lib/theme-provider";
+import { AppThemeProvider } from "@/lib/theme-context";
 import {
   SafeAreaFrameContext,
   SafeAreaInsetsContext,
@@ -14,9 +15,13 @@ import {
   initialWindowMetrics,
 } from "react-native-safe-area-context";
 import type { EdgeInsets, Rect } from "react-native-safe-area-context";
-import { GameProvider } from "@/lib/game-context";
+import { GameProvider, useGame } from "@/lib/game-context";
 import { AudioProvider } from "@/lib/audio-context";
-import { scheduleReminders, requestPermissions } from "@/services/notificationService";
+import {
+  scheduleStreakNotifications,
+  ensureAndroidChannels,
+  requestPermissions,
+} from "@/services/notificationService";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ZenSplashScreen } from "@/components/zen-splash-screen";
 import { useAudio } from "@/lib/audio-context";
@@ -28,6 +33,53 @@ function AudioInitializer({ showSplash }: { showSplash: boolean }) {
       playAfterSplash();
     }
   }, [showSplash, playAfterSplash]);
+  return null;
+}
+
+/**
+ * NotificationScheduler — Lives inside GameProvider so it can read streak state.
+ * Reschedules the 7 PM / 8 PM daily slots on cold start and every foreground resume.
+ * Uses real stats so the scheduler knows whether to suppress reminders today.
+ */
+function NotificationScheduler() {
+  const { stats } = useGame();
+
+  const reschedule = useCallback(() => {
+    if (Platform.OS === 'web') return;
+    AsyncStorage.getItem('app_settings').then((saved) => {
+      let notificationsEnabled = true;
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed.notificationsEnabled === false) notificationsEnabled = false;
+        } catch {}
+      }
+      if (notificationsEnabled) {
+        ensureAndroidChannels().then(() => {
+          requestPermissions().then((granted) => {
+            if (granted) {
+              scheduleStreakNotifications(
+                stats.winStreak,
+                stats.lastPlayedDate,
+              );
+            }
+          });
+        });
+      }
+    });
+  }, [stats.winStreak, stats.lastPlayedDate]);
+
+  // On cold start
+  useEffect(() => { reschedule(); }, []);
+
+  // On every foreground resume
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') reschedule();
+    });
+    return () => sub.remove();
+  }, [reschedule]);
+
   return null;
 }
 
@@ -44,30 +96,8 @@ export default function RootLayout() {
   const initialInsets = initialWindowMetrics?.insets ?? DEFAULT_WEB_INSETS;
   const initialFrame = initialWindowMetrics?.frame ?? DEFAULT_WEB_FRAME;
 
-  // Request notification permissions on first launch (native only)
-  useEffect(() => {
-    if (Platform.OS !== "web") {
-      AsyncStorage.getItem('app_settings').then((saved) => {
-        let isEnabled = true; // Default
-        if (saved) {
-          try {
-            const parsed = JSON.parse(saved);
-            if (parsed.notificationsEnabled === false) {
-              isEnabled = false;
-            }
-          } catch {}
-        }
-        
-        if (isEnabled) {
-          requestPermissions().then((granted) => {
-            if (granted) {
-              scheduleReminders();
-            }
-          });
-        }
-      });
-    }
-  }, []);
+  // ── Notification scheduling handled by NotificationScheduler
+  // (mounted inside GameProvider below so it can read real streak stats)
 
   // Ensure minimum padding for top and bottom on mobile
   const providerInitialMetrics = useMemo(() => {
@@ -84,17 +114,22 @@ export default function RootLayout() {
 
   const content = (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <AudioProvider>
-        <GameProvider>
+      <AppThemeProvider>
+        <AudioProvider>
+      <GameProvider>
+          <NotificationScheduler />
           <AudioInitializer showSplash={showSplash} />
           {/* Default to hiding native headers so raw route segments don't appear */}
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="game" />
+            <Stack.Screen name="privacy-policy" />
+            <Stack.Screen name="about" />
           </Stack>
           <StatusBar style="auto" />
         </GameProvider>
       </AudioProvider>
+      </AppThemeProvider>
       {/* Animated splash — renders on top until animation completes */}
       {showSplash && <ZenSplashScreen onFinish={handleSplashFinish} />}
     </GestureHandlerRootView>

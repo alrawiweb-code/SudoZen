@@ -2,11 +2,7 @@ import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import { Tabs, useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-
-const PRIMARY = '#6945c7';
-const PRIMARY_LIGHT = '#9c7afe';
-const INACTIVE = 'rgba(47,51,54,0.4)';
-const NAV_BG = 'rgba(255,255,255,0.85)';
+import { useAppTheme } from '@/lib/theme-context';
 
 type TabItem = {
   name: string;
@@ -28,7 +24,7 @@ function TabIcon({ icon, active }: { icon: string; active: boolean }) {
   if (icon === 'settings') emoji = '⚙️';
 
   return (
-    <Text style={[styles.tabEmoji, active && styles.tabEmojiActive]}>
+    <Text style={[styles.tabEmoji, { color: active ? '#fff' : 'rgba(150,150,150,0.5)' }]}>
       {emoji}
     </Text>
   );
@@ -38,6 +34,7 @@ function ZenTabBar() {
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
+  const { theme } = useAppTheme();
   const bottomPad = Platform.OS === 'web' ? 20 : Math.max(insets.bottom, 12);
 
   const getActiveIndex = () => {
@@ -51,7 +48,7 @@ function ZenTabBar() {
 
   return (
     <View style={[styles.navWrapper, { paddingBottom: bottomPad }]}>
-      <View style={styles.navPill}>
+      <View style={[styles.navPill, { backgroundColor: theme.gridBg ? theme.gridBg + 'E6' : theme.card + 'E6', borderColor: theme.accent + '20', shadowColor: '#000' }]}>
         {TABS.map((tab, idx) => {
           const isActive = idx === activeIndex;
           return (
@@ -68,7 +65,7 @@ function ZenTabBar() {
             >
               {isActive ? (
                 <LinearGradient
-                  colors={[PRIMARY, PRIMARY_LIGHT]}
+                  colors={[theme.accent, theme.accent]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={styles.navBtnActive}
@@ -80,7 +77,7 @@ function ZenTabBar() {
                   <TabIcon icon={tab.icon} active={false} />
                 </View>
               )}
-              <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>
+              <Text style={[styles.navLabel, { color: isActive ? theme.accent : theme.textSecondary }, isActive && styles.navLabelActive]}>
                 {tab.label}
               </Text>
             </Pressable>
@@ -120,19 +117,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    backgroundColor: NAV_BG,
     borderRadius: 9999,
     paddingVertical: 10,
     paddingHorizontal: 16,
     width: '100%',
     maxWidth: 380,
-    shadowColor: 'rgba(47,51,54,0.15)',
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 1,
+    shadowOpacity: 0.1,
     shadowRadius: 32,
     elevation: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.7)',
   },
   navBtn: {
     alignItems: 'center',
@@ -157,19 +151,13 @@ const styles = StyleSheet.create({
   },
   tabEmoji: {
     fontSize: 22,
-    color: INACTIVE,
-  },
-  tabEmojiActive: {
-    color: '#fff',
   },
   navLabel: {
     fontSize: 10,
     fontWeight: '600',
-    color: INACTIVE,
     letterSpacing: 0.2,
   },
   navLabelActive: {
-    color: PRIMARY,
     fontWeight: '700',
   },
 });

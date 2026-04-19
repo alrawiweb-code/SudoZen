@@ -12,7 +12,11 @@ import {
   type Difficulty,
 } from './sudoku-engine';
 import * as StorageService from '@/services/storageService';
-import { scheduleReminders } from '@/services/notificationService';
+import {
+  scheduleStreakNotifications,
+  fireMilestoneNotification,
+} from '@/services/notificationService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface GameStats {
   gamesPlayed: number;
@@ -247,30 +251,56 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       newStats.gamesWon++;
       newStats.totalTime += elapsedTime;
       newStats.averageTime = newStats.totalTime / newStats.gamesWon;
-      newStats.lastPlayedDate = new Date().toISOString();
 
-      const diffStats = newStats.difficultyStats[difficulty];
-      diffStats.played++;
-      diffStats.won++;
-      diffStats.totalTime += elapsedTime;
+      // Deep clone difficultyStats
+      newStats.difficultyStats = {
+        ...newStats.difficultyStats,
+        [difficulty]: {
+          ...newStats.difficultyStats[difficulty],
+          played: newStats.difficultyStats[difficulty].played + 1,
+          won: newStats.difficultyStats[difficulty].won + 1,
+          totalTime: newStats.difficultyStats[difficulty].totalTime + elapsedTime,
+        },
+      }
+      
+      const { toLocalDateString } = require('@/lib/utils');
 
-      // Update win streak
-      const today = new Date().toDateString();
-      const lastDate = new Date(newStats.lastPlayedDate).toDateString();
-      if (today === lastDate) {
-        newStats.winStreak++;
-      } else {
-        newStats.winStreak = 1;
+      // ── Streak logic (strictly local date to prevent timezone drifts) ─────
+      const todayDate = new Date();
+      const todayStr = toLocalDateString(todayDate);
+      const lastPlayedStr = newStats.lastPlayedDate
+        ? toLocalDateString(new Date(newStats.lastPlayedDate))
+        : '';
+        
+      let streak = newStats.winStreak || 0;
+
+      if (lastPlayedStr !== todayStr) {
+        if (lastPlayedStr) {
+          // Compare midnight-normalized dates
+          const todayMs = new Date(todayStr).getTime();
+          const lastMs = new Date(lastPlayedStr).getTime();
+          const diff = Math.round((todayMs - lastMs) / (1000 * 60 * 60 * 24));
+          
+          if (diff === 1) {
+            streak += 1;
+          } else {
+            streak = 1; // gap detected, reset
+          }
+        } else {
+          streak = 1;
+        }
+
+        // Record today in stats
+        const existingDates = newStats.playedDates ?? [];
+        if (!existingDates.includes(todayStr)) {
+          newStats.playedDates = [...existingDates, todayStr];
+        }
       }
 
-      // Track played date for calendar (YYYY-MM-DD, deduped)
-      const todayKey = new Date().toISOString().split('T')[0];
-      const existingDates = newStats.playedDates ?? [];
-      if (!existingDates.includes(todayKey)) {
-        newStats.playedDates = [...existingDates, todayKey];
-      } else {
-        newStats.playedDates = existingDates;
-      }
+      newStats.winStreak = streak;
+      // Store full ISO string for other operations, but the timezone constraint
+      // holds true via toLocalDateString checks
+      newStats.lastPlayedDate = todayDate.toISOString();
 
       return {
         ...state,
@@ -401,12 +431,61 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'RESTART_GAME' });
   }, []);
 
-  const completeGame = useCallback(() => {
+  const completeGame = useCallback(async () => {
+    if (state.currentGame) {
+      const difficulty = state.currentGame.difficulty;
+      const elapsedTime = Date.now() - state.gameStartTime;
+      const key = `bestTime_${difficulty}`;
+      try {
+        const saved = await AsyncStorage.getItem(key);
+        if (!saved || elapsedTime < parseInt(saved, 10)) {
+          await AsyncStorage.setItem(key, String(elapsedTime));
+        }
+      } catch (e) {}
+    }
+
+    // ── Pre-compute new streak (mirrors COMPLETE_GAME reducer) ──────────────
+    // We compute here so we can pass accurate values to the notification system
+    // BEFORE dispatching (since state updates are async after dispatch).
+    const today = new Date().toDateString();
+    const lastPlayed = state.stats.lastPlayedDate
+      ? new Date(state.stats.lastPlayedDate).toDateString()
+      : '';
+    const prevStreak = state.stats.winStreak || 0;
+
+    let newStreak = prevStreak;
+    let isFirstPlayToday = false;
+
+    if (lastPlayed !== today) {
+      isFirstPlayToday = true;
+      if (lastPlayed) {
+        const diff = Math.round(
+          (new Date(today).getTime() - new Date(lastPlayed).getTime()) / (1000 * 60 * 60 * 24)
+        );
+        newStreak = diff === 1 ? prevStreak + 1 : 1;
+      } else {
+        newStreak = 1;
+      }
+    }
+
+    // Dispatch the game completion (updates stats in reducer + AsyncStorage)
     dispatch({ type: 'COMPLETE_GAME' });
-    // Save last played time and schedule push reminders
     StorageService.saveLastPlayed(Date.now());
-    scheduleReminders();
-  }, []);
+
+    // ── Notifications ───────────────────────────────────────────────────────
+    // Reschedule the 7 PM / 8 PM slots reflecting the new completion state.
+    // Pass today's ISO so hasCompletedToday() returns true → suppresses reminders.
+    scheduleStreakNotifications(newStreak, new Date().toISOString());
+
+    // Fire an instant milestone notification only on first play of the day
+    // and only when a milestone threshold is newly crossed.
+    if (isFirstPlayToday && newStreak !== prevStreak) {
+      const MILESTONE_DAYS = [3, 5, 7, 14, 30, 60, 100];
+      if (MILESTONE_DAYS.includes(newStreak)) {
+        fireMilestoneNotification(newStreak);
+      }
+    }
+  }, [state.currentGame, state.gameStartTime, state.stats]);
 
   const loadGame = useCallback((game: SudokuGrid) => {
     dispatch({ type: 'LOAD_GAME', payload: game });
