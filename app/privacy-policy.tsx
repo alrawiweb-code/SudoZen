@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEffect, useState } from 'react';
 import { useAppTheme } from '@/lib/theme-context';
 import * as WebBrowser from 'expo-web-browser';
+import { ChevronLeft, AlertCircle, CheckCircle2 } from 'lucide-react-native';
 
 const PRIVACY_POLICY_URL = 'https://privacy-policy-umber-one.vercel.app/';
 
@@ -111,7 +112,7 @@ export default function PrivacyPolicyScreen() {
             pressed && { opacity: 0.6, transform: [{ scale: 0.95 }] },
           ]}
         >
-          <Text style={[styles.backIcon, { color: theme.accent }]}>←</Text>
+          <ChevronLeft size={24} color={theme.accent} strokeWidth={2} />
         </Pressable>
         <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>Privacy Policy</Text>
         <View style={{ width: 40 }} />
@@ -129,7 +130,7 @@ export default function PrivacyPolicyScreen() {
 
       {error && (
         <View style={styles.centered}>
-          <Text style={styles.errorEmoji}>⚠️</Text>
+          <AlertCircle size={48} color={theme.accent} strokeWidth={1.5} style={{ marginBottom: 16 }} />
           <Text style={[styles.errorTitle, { color: theme.textPrimary }]}>Unable to open</Text>
           <Text style={[styles.errorSub, { color: theme.textSecondary }]}>
             Please check your internet connection and try again.
@@ -149,7 +150,7 @@ export default function PrivacyPolicyScreen() {
 
       {opened && !error && !loading && (
         <View style={styles.centered}>
-          <Text style={{ fontSize: 40 }}>✅</Text>
+          <CheckCircle2 size={48} color={theme.accent} strokeWidth={1.5} />
           <Text style={[styles.statusText, { color: theme.textSecondary, marginTop: 12 }]}>
             Privacy Policy opened.
           </Text>

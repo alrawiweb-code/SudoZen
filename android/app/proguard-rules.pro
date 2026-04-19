@@ -11,4 +11,7 @@
 -keep class com.swmansion.reanimated.** { *; }
 -keep class com.facebook.react.turbomodule.** { *; }
 
-# Add any project specific keep options here:
+
+# Expo missing rules (suggested by R8)
+-dontwarn expo.modules.kotlin.services.FilePermissionService$Permission
+-dontwarn expo.modules.kotlin.services.FilePermissionService

@@ -8,6 +8,11 @@ import { generatePuzzleFromDate } from '@/services/puzzleService';
 import { useAppTheme } from '@/lib/theme-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StreakTracker, MILESTONES } from '@/components/streak-tracker';
+import {
+  Activity, Flame, LayoutGrid, TrendingUp, Clock, Hourglass,
+  Sprout, Zap, Play, ChevronRight, Check, Sparkles,
+} from 'lucide-react-native';
+import type { LucideIcon } from 'lucide-react-native';
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 function getMonthName(date: Date) {
@@ -111,7 +116,7 @@ function DayCell({
     ]).start(() => setShowTip(false));
   }, []);
 
-  const tipLabel = isToday ? 'Today' : isPlayed ? 'Completed ✓' : isFuture ? 'Future' : 'Missed';
+  const tipLabel = isToday ? 'Today' : isPlayed ? 'Completed' : isFuture ? 'Future' : 'Missed';
 
   // ── Resolved styles ────────────────────────────────────────────────────────
   const missedBg = isDark ? '#1e293b' : '#F3F4F6';
@@ -180,7 +185,7 @@ function DayCell({
 
         {/* Tiny sparkle for today + played */}
         {isToday && isPlayed && (
-          <Text style={cs.sparkle}>✨</Text>
+          <Sparkles size={10} color="#fff" style={cs.sparkle} />
         )}
       </Animated.View>
 
@@ -192,7 +197,12 @@ function DayCell({
             { opacity: tipAnim, transform: [{ translateY: tipAnim.interpolate({ inputRange: [0,1], outputRange: [4,0] }) }] },
           ]}
         >
-          <Text style={cs.tooltipText}>{tipLabel}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={cs.tooltipText}>{tipLabel}</Text>
+            {isPlayed && (
+              <Check size={10} color={isDark ? '#fff' : '#000'} style={{ marginLeft: 4 }} />
+            )}
+          </View>
         </Animated.View>
       )}
     </Pressable>
@@ -252,9 +262,12 @@ function ActivityCalendar({ playedDates, winStreak }: { playedDates: string[], w
       {/* Month progress bar */}
       <View style={cs.progressSection}>
         <View style={cs.progressMeta}>
-          <Text style={[cs.progressLabel, { color: theme.textSecondary }]}>
-            🔥 {playedThisMonth} day{playedThisMonth !== 1 ? 's' : ''} played this month
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <Flame size={13} strokeWidth={2} color={streakColor.dark} />
+            <Text style={[cs.progressLabel, { color: theme.textSecondary }]}>
+              {playedThisMonth} day{playedThisMonth !== 1 ? 's' : ''} played this month
+            </Text>
+          </View>
           <Text style={[cs.progressPct, { color: streakColor.dark }]}>{completionPct}%</Text>
         </View>
         <View style={[cs.progressTrack, { backgroundColor: isDark ? '#334155' : '#e2e8f0' }]}>
@@ -391,9 +404,9 @@ function AnimatedBar({
 // ─── Sub-components (upgraded) ───────────────────────────────────────────────
 
 function MonthlyStatCard({
-  icon, label, numericValue, displayValue, bg, accentColor, theme, delay = 0,
+  icon: Icon, label, numericValue, displayValue, bg, accentColor, theme, delay = 0,
 }: {
-  icon: string; label: string;
+  icon: LucideIcon; label: string;
   numericValue: number;  // for count-up animation
   displayValue: string;  // raw formatted string (used when not a plain number)
   bg: string; accentColor: string;
@@ -439,7 +452,7 @@ function MonthlyStatCard({
       >
         <View style={styles.statCardInner}>
           <View style={[styles.statCardIconCircle, { backgroundColor: bg }]}>
-            <Text style={[styles.statCardIcon, { color: accentColor }]}>{icon}</Text>
+            <Icon size={20} strokeWidth={1.8} color={accentColor} />
           </View>
           <View>
             <Text style={[styles.statCardLabel, { color: theme.textSecondary }]}>{label}</Text>
@@ -448,16 +461,16 @@ function MonthlyStatCard({
             </Text>
           </View>
         </View>
-        <Text style={[styles.statCardChevron, { color: accentColor + '60' }]}>›</Text>
+        <ChevronRight size={18} strokeWidth={1.8} color={accentColor + '60'} />
       </Pressable>
     </Animated.View>
   );
 }
 
-const RECORD_BADGES: Record<string, { icon: string; gradient: [string, string] }> = {
-  Beginner:     { icon: '🌱', gradient: ['#34D399', '#10B981'] },
-  Intermediate: { icon: '⚡', gradient: ['#FBBF24', '#F59E0B'] },
-  Advanced:     { icon: '🔥', gradient: ['#F87171', '#EF4444'] },
+const RECORD_BADGES: Record<string, { icon: LucideIcon; gradient: [string, string] }> = {
+  Beginner:     { icon: Sprout, gradient: ['#34D399', '#10B981'] },
+  Intermediate: { icon: Zap,    gradient: ['#FBBF24', '#F59E0B'] },
+  Advanced:     { icon: Flame,  gradient: ['#F87171', '#EF4444'] },
 };
 
 function RecordRow({
@@ -483,7 +496,7 @@ function RecordRow({
       <View style={styles.recordRowLeft}>
         {badge && (
           <View style={[styles.recordBadge, { backgroundColor: badge.gradient[0] + '25' }]}>
-            <Text style={styles.recordBadgeIcon}>{badge.icon}</Text>
+            <badge.icon size={15} strokeWidth={2} color={badge.gradient[0]} />
           </View>
         )}
         <Text style={[styles.recordLabel, { color: theme.textSecondary }]}>{label}</Text>
@@ -589,7 +602,7 @@ function DailyConsistencyCard({
       <View style={ps.consistencyHeader}>
         <Text style={[ps.consistencyTitle, { color: theme.textPrimary }]}>Daily Consistency</Text>
         <View style={[ps.consistencyBadge, { backgroundColor: streakCol.fill + '25' }]}>
-          <Text style={[ps.consistencyBadgeText, { color: streakCol.dark }]}>🔥 Active</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}><Flame size={11} strokeWidth={2.2} color={streakCol.dark} /><Text style={[ps.consistencyBadgeText, { color: streakCol.dark }]}>Active</Text></View>
         </View>
       </View>
 
@@ -704,7 +717,7 @@ export default function StatsScreen() {
               { backgroundColor: theme.accent + '20', transform: [{ scale: iconPulse }] },
             ]}
           >
-            <Text style={styles.headerIcon}>🧘</Text>
+            <Activity size={20} strokeWidth={1.8} color={theme.accent} />
           </Animated.View>
           <View>
             <Text style={[styles.headerTitle, { color: theme.accent }]}>Your Progress</Text>
@@ -751,10 +764,10 @@ export default function StatsScreen() {
 
         {/* ── Monthly Stats cards (animated) ── */}
         <View style={styles.statsGrid}>
-          <MonthlyStatCard icon="⊞" label="Games this month"  numericValue={monthGamesPlayed} displayValue={String(monthGamesPlayed)} bg={theme.accent + '30'} accentColor={theme.accent} theme={theme} delay={0}   />
-          <MonthlyStatCard icon="📈" label="Best streak"        numericValue={stats.winStreak}   displayValue={`${stats.winStreak} days`} bg={theme.accent + '30'} accentColor={theme.accent} theme={theme} delay={60}  />
-          <MonthlyStatCard icon="⏱️" label="Total games"       numericValue={stats.gamesPlayed} displayValue={String(stats.gamesPlayed)}  bg={theme.accent + '20'} accentColor={theme.accent} theme={theme} delay={120} />
-          <MonthlyStatCard icon="⌛" label="Total play time"   numericValue={0}                 displayValue={totalPlayTimeFormatted}     bg={theme.accent + '20'} accentColor={theme.accent} theme={theme} delay={180} />
+          <MonthlyStatCard icon={LayoutGrid}  label="Games this month"  numericValue={monthGamesPlayed} displayValue={String(monthGamesPlayed)} bg={theme.accent + '30'} accentColor={theme.accent} theme={theme} delay={0}   />
+          <MonthlyStatCard icon={TrendingUp}  label="Best streak"        numericValue={stats.winStreak}   displayValue={`${stats.winStreak} days`} bg={theme.accent + '30'} accentColor={theme.accent} theme={theme} delay={60}  />
+          <MonthlyStatCard icon={Clock}       label="Total games"       numericValue={stats.gamesPlayed} displayValue={String(stats.gamesPlayed)}  bg={theme.accent + '20'} accentColor={theme.accent} theme={theme} delay={120} />
+          <MonthlyStatCard icon={Hourglass}   label="Total play time"   numericValue={0}                 displayValue={totalPlayTimeFormatted}     bg={theme.accent + '20'} accentColor={theme.accent} theme={theme} delay={180} />
         </View>
 
         {/* ── Experience Progress (animated gradient bars) ── */}
@@ -786,7 +799,7 @@ export default function StatsScreen() {
               start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
               style={styles.ctaButton}
             >
-              <Text style={styles.ctaButtonIcon}>▶</Text>
+              <Play size={18} strokeWidth={2.5} color="#fff" fill="#fff" />
               <Text style={styles.ctaButtonText}>Play Today{"'"}s Puzzle</Text>
             </LinearGradient>
           </Pressable>

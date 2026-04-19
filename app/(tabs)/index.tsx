@@ -8,6 +8,7 @@ import {
   Platform,
   Modal,
 } from 'react-native';
+import { Lock, Brain, Grid3X3, ChevronRight } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useGame } from '@/lib/game-context';
 import { Difficulty } from '@/lib/sudoku-engine';
@@ -86,7 +87,7 @@ function DifficultyPills({ active, onSelect, onLockedPress, stats }: DifficultyP
                   {label}
                 </Text>
                 {locked && (
-                  <Text style={{ fontSize: 12, marginLeft: 4 }}>🔒</Text>
+                  <Lock size={12} color={theme.textPrimary} style={{ marginLeft: 4 }} />
                 )}
               </View>
             )}
@@ -111,15 +112,15 @@ function LockedLevelPopup({ visible, difficulty, onHide, onGoToBeginner }: {
 
   const content = {
     medium: {
-      title: "Level Locked 🔒",
+      title: "Level Locked",
       message: "Complete Beginner level to unlock Intermediate.",
-      fun: "You must master the basics before advancing your mind 🧘",
+      fun: "You must master the basics before advancing your mind.",
       target: "Beginner"
     },
     hard: {
-      title: "Level Locked 🔒",
+      title: "Level Locked",
       message: "Complete Intermediate level to unlock Advanced.",
-      fun: "A sharp mind requires steady progression. Calm your spirit first 🧘",
+      fun: "A sharp mind requires steady progression. Calm your spirit first.",
       target: "Intermediate"
     }
   }[difficulty as 'medium' | 'hard'];
@@ -133,7 +134,7 @@ function LockedLevelPopup({ visible, difficulty, onHide, onGoToBeginner }: {
           <BlurView intensity={30} tint={theme.background === '#0F172A' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
           <View style={[styles.modalContent, { backgroundColor: theme.card + 'D9' }]}>
             <View style={[styles.lockCircle, { backgroundColor: theme.accent + '20' }]}>
-              <Text style={{ fontSize: 32 }}>🔒</Text>
+              <Lock size={32} color={theme.accent} strokeWidth={1.5} />
             </View>
             
             <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>{content?.title}</Text>
@@ -191,7 +192,7 @@ function HeroCard({ onPlay }: { onPlay: () => void }) {
       <View style={[styles.heroCard, { backgroundColor: theme.card, borderColor: theme.accent + '20' }]}>
         {/* Icon circle */}
         <View style={[styles.heroIconCircle, { backgroundColor: theme.accent + '20' }]}>
-          <Text style={styles.heroIcon}>🧘</Text>
+          <Brain size={32} color={theme.accent} strokeWidth={1.5} />
         </View>
 
         <Text style={[styles.heroTitle, { color: theme.textPrimary }]}>Today{"'"}s Puzzle</Text>
@@ -312,7 +313,7 @@ export default function HomeScreen() {
         {/* ── Games played mini-card ── */}
         <View style={styles.gamesCard}>
           <View style={styles.gamesIconCircle}>
-            <Text style={styles.gamesIcon}>🧩</Text>
+            <Grid3X3 size={24} color={theme.accent} strokeWidth={1.5} />
           </View>
           <View>
             <Text style={styles.gamesLabel}>GAMES PLAYED</Text>
@@ -338,7 +339,10 @@ export default function HomeScreen() {
             pressed && { opacity: 0.65 },
           ]}
         >
-          <Text style={[styles.statsLinkText, { color: theme.accent }]}>View Full Statistics →</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={[styles.statsLinkText, { color: theme.accent }]}>View Full Statistics</Text>
+            <ChevronRight size={16} color={theme.accent} style={{ marginLeft: 4 }} />
+          </View>
         </Pressable>
 
         {/* bottom breathing room */}

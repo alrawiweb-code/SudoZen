@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
+import { ChevronLeft, Lightbulb } from 'lucide-react-native';
 
 // ─── Data ────────────────────────────────────────────────────────────────────────
 const techniques = {
@@ -94,7 +95,7 @@ export default function LearnScreen() {
           onPress={() => router.back()}
           style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
         >
-          <Text style={styles.backIcon}>←</Text>
+          <ChevronLeft size={24} color="#FFFFFF" strokeWidth={2} />
         </Pressable>
         <Text style={styles.headerTitle}>How to Play</Text>
         <View style={{ width: 40 }} />
@@ -133,7 +134,7 @@ export default function LearnScreen() {
             <Text style={styles.cardTitle}>{tech.title}</Text>
             <Text style={styles.cardDescription}>{tech.description}</Text>
             <View style={styles.exampleBox}>
-              <Text style={styles.exampleIcon}>💡</Text>
+              <Lightbulb size={18} color="#FFFFFF" strokeWidth={2} style={styles.exampleIcon} />
               <Text style={styles.exampleText}>{tech.example}</Text>
             </View>
           </View>

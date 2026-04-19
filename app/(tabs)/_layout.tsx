@@ -3,30 +3,28 @@ import { Tabs, useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAppTheme } from '@/lib/theme-context';
+import { LayoutGrid, BarChart3, Settings } from 'lucide-react-native';
+import type { LucideIcon } from 'lucide-react-native';
 
 type TabItem = {
   name: string;
   label: string;
-  icon: string;
+  icon: LucideIcon;
 };
 
 const TABS: TabItem[] = [
-  { name: 'index', label: 'Play', icon: 'grid_view' },
-  { name: 'stats', label: 'Statistics', icon: 'bar_chart' },
-  { name: 'settings', label: 'Settings', icon: 'settings' },
+  { name: 'index', label: 'Play', icon: LayoutGrid },
+  { name: 'stats', label: 'Statistics', icon: BarChart3 },
+  { name: 'settings', label: 'Settings', icon: Settings },
 ];
 
-// Helper for icons (simulating the ones in the pic)
-function TabIcon({ icon, active }: { icon: string; active: boolean }) {
-  let emoji = '•';
-  if (icon === 'grid_view') emoji = '⊞';
-  if (icon === 'bar_chart') emoji = '📊';
-  if (icon === 'settings') emoji = '⚙️';
-
+function TabIcon({ icon: Icon, active }: { icon: LucideIcon; active: boolean }) {
   return (
-    <Text style={[styles.tabEmoji, { color: active ? '#fff' : 'rgba(150,150,150,0.5)' }]}>
-      {emoji}
-    </Text>
+    <Icon
+      size={22}
+      strokeWidth={1.8}
+      color={active ? '#fff' : 'rgba(150,150,150,0.5)'}
+    />
   );
 }
 
@@ -148,9 +146,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
-  },
-  tabEmoji: {
-    fontSize: 22,
   },
   navLabel: {
     fontSize: 10,

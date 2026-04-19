@@ -12,8 +12,8 @@
     "lint": "expo lint",
     "format": "prettier --write .",
     "test": "vitest run",
-    "build:apk": "export JAVA_HOME=$(/usr/libexec/java_home -v 21) && cd android && ./gradlew assembleRelease",
-    "build:aab": "export JAVA_HOME=$(/usr/libexec/java_home -v 21) && cd android && ./gradlew bundleRelease"
+    "build:apk": "set \"JAVA_HOME=C:\\Program Files\\Android\\Android Studio\\jbr\" && cd android && .\\gradlew assembleDebug",
+    "build:release": "set \"JAVA_HOME=C:\\Program Files\\Android\\Android Studio\\jbr\" && cd android && .\\gradlew assembleRelease"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -43,6 +43,7 @@
     "expo-system-ui": "~6.0.9",
     "expo-video": "~3.0.15",
     "expo-web-browser": "~15.0.10",
+    "lucide-react-native": "^1.8.0",
     "nativewind": "^4.2.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",

@@ -8,6 +8,10 @@ import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAudio } from '@/lib/audio-context';
 import { useAppTheme, ThemeColors } from '@/lib/theme-context';
+import {
+  ChevronLeft, Clock, PenLine, Eraser, Lightbulb, Settings,
+  Play, Pause, RefreshCw, Volume2, VolumeX, BookOpen, Palette, LogOut,
+} from 'lucide-react-native';
 
 
 // ─── Themes ────────────────────────────────────────────────────────────────────
@@ -88,7 +92,7 @@ function TopBar({ theme }: { theme: GameThemeContext }) {
           onPress={() => router.back()}
           style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
         >
-          <Text style={[styles.backBtnIcon, { color: theme.primary }]}>←</Text>
+          <ChevronLeft size={24} strokeWidth={2} color={theme.primary} />
         </Pressable>
 
         <Text style={[styles.topBarTitle, { color: theme.primary }]}>
@@ -96,7 +100,7 @@ function TopBar({ theme }: { theme: GameThemeContext }) {
         </Text>
 
         <View style={[styles.timerPill, { backgroundColor: theme.emptyCell }]}>
-          <Text style={[styles.timerIcon, { color: theme.primary }]}>⏱</Text>
+          <Clock size={14} strokeWidth={2} color={theme.primary} />
           <Text style={[styles.timerText, { color: theme.primary }]}>
             {formatTime(elapsedTime)}
           </Text>
@@ -301,7 +305,7 @@ function HintPopup({ text, visible, theme, onHide }: { text: string; visible: bo
         pressed && { opacity: 0.9 }
       ]}>
         <View style={[styles.hintPopupIconBox, { backgroundColor: hexToRgba(theme.primary, 0.1) }]}>
-          <Text style={[styles.hintPopupIcon, { color: theme.primary }]}>💡</Text>
+          <Lightbulb size={18} strokeWidth={2} color={theme.primary} />
         </View>
         <Text style={[styles.hintPopupText, { color: theme.text }]} numberOfLines={2}>
           {text}
@@ -334,7 +338,7 @@ function NotesGuidePopup({ visible, theme, onDismiss, onDisable }: { visible: bo
     >
       <Animated.View style={[styles.notesGuideCard, { backgroundColor: theme.gridBg, transform: [{ scale: scaleAnim }] }]}>
         <View style={[styles.notesGuideIconBox, { backgroundColor: hexToRgba(theme.primary, 0.1) }]}>
-          <Text style={styles.notesGuideIcon}>✏️</Text>
+          <PenLine size={20} strokeWidth={2} color={theme.primary} />
         </View>
         <Text style={[styles.notesGuideTitle, { color: theme.text }]}>Notes Mode</Text>
         <Text style={[styles.notesGuideDesc, { color: theme.secondary }]}>
@@ -389,21 +393,21 @@ function OptionsPopup({ visible, theme, onResume, onPause, isPaused, onRestart, 
         <View style={styles.optionsList}>
           <Pressable style={styles.optionBtn} onPress={isPaused ? onResume : onPause}>
             <View style={[styles.optionIconBox, { backgroundColor: hexToRgba(theme.primary, 0.1) }]}>
-              <Text style={styles.optionIcon}>{isPaused ? '▶️' : '⏸️'}</Text>
+              {isPaused ? <Play size={18} strokeWidth={2} color={theme.primary} /> : <Pause size={18} strokeWidth={2} color={theme.primary} />}
             </View>
             <Text style={[styles.optionText, { color: theme.text }]}>{isPaused ? 'Resume Game' : 'Pause Game'}</Text>
           </Pressable>
 
           <Pressable style={styles.optionBtn} onPress={onRestart}>
             <View style={[styles.optionIconBox, { backgroundColor: hexToRgba(theme.primary, 0.1) }]}>
-              <Text style={styles.optionIcon}>🔄</Text>
+              <RefreshCw size={18} strokeWidth={2} color={theme.primary} />
             </View>
             <Text style={[styles.optionText, { color: theme.text }]}>Restart Puzzle</Text>
           </Pressable>
 
           <Pressable style={styles.optionBtn} onPress={toggleMusic}>
             <View style={[styles.optionIconBox, { backgroundColor: hexToRgba(theme.primary, 0.1) }]}>
-              <Text style={styles.optionIcon}>{isMusicEnabled ? '🔊' : '🔇'}</Text>
+              {isMusicEnabled ? <Volume2 size={18} strokeWidth={2} color={theme.primary} /> : <VolumeX size={18} strokeWidth={2} color={theme.primary} />}
             </View>
             <View>
               <Text style={[styles.optionText, { color: theme.text }]}>Music</Text>
@@ -415,21 +419,21 @@ function OptionsPopup({ visible, theme, onResume, onPause, isPaused, onRestart, 
 
           <Pressable style={styles.optionBtn} onPress={onHowToPlay}>
             <View style={[styles.optionIconBox, { backgroundColor: hexToRgba(theme.primary, 0.1) }]}>
-              <Text style={styles.optionIcon}>📖</Text>
+              <BookOpen size={18} strokeWidth={2} color={theme.primary} />
             </View>
             <Text style={[styles.optionText, { color: theme.text }]}>How to Play</Text>
           </Pressable>
 
           <Pressable style={styles.optionBtn} onPress={onThemeSelect}>
             <View style={[styles.optionIconBox, { backgroundColor: hexToRgba(theme.primary, 0.1) }]}>
-              <Text style={styles.optionIcon}>🎨</Text>
+              <Palette size={18} strokeWidth={2} color={theme.primary} />
             </View>
             <Text style={[styles.optionText, { color: theme.text }]}>Customize Theme</Text>
           </Pressable>
 
           <Pressable style={styles.optionBtn} onPress={onQuit}>
             <View style={[styles.optionIconBox, { backgroundColor: 'rgba(249, 115, 134, 0.1)' }]}>
-              <Text style={styles.optionIcon}>🚪</Text>
+              <LogOut size={18} strokeWidth={2} color="#a8364b" />
             </View>
             <Text style={[styles.optionText, { color: '#a8364b' }]}>Quit to Home</Text>
           </Pressable>
@@ -466,10 +470,10 @@ function OptionsPopup({ visible, theme, onResume, onPause, isPaused, onRestart, 
   };
 
       const tools = [
-      {id: 'notes', icon: '✎', label: 'Notes', active: isNotesMode },
-      {id: 'erase', icon: '⌫', label: 'Erase' },
-      {id: 'hint', icon: '💡', label: 'Hint' },
-      {id: 'settings', icon: '⚙', label: 'Options' },
+      {id: 'notes', IconComponent: PenLine, label: 'Notes', active: isNotesMode },
+      {id: 'erase', IconComponent: Eraser, label: 'Erase' },
+      {id: 'hint', IconComponent: Lightbulb, label: 'Hint' },
+      {id: 'settings', IconComponent: Settings, label: 'Options' },
       ];
 
       return (
@@ -486,9 +490,7 @@ function OptionsPopup({ visible, theme, onResume, onPause, isPaused, onRestart, 
                 { backgroundColor: tool.active ? theme.primary : theme.emptyCell },
               ]}
             >
-              <Text style={[styles.toolIcon, { color: tool.active ? '#FFFFFF' : theme.text }]}>
-                {tool.icon}
-              </Text>
+              <tool.IconComponent size={20} strokeWidth={1.8} color={tool.active ? '#FFFFFF' : theme.text} />
             </View>
             <Text style={[styles.toolLabel, { color: tool.active ? theme.primary : theme.secondary }]}>
               {tool.label}

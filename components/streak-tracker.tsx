@@ -462,10 +462,10 @@ function MilestoneRoad({ currentDays }: { currentDays: number }) {
                 style={[
                   s.roadNode,
                   reached
-                    ? { backgroundColor: m.color, borderColor: m.dark + '40', borderWidth: 2,
-                        shadowColor: m.color, shadowOpacity: 0.5, shadowRadius: 6, elevation: 4 }
-                    : { backgroundColor: 'rgba(0,0,0,0.06)', borderColor: 'transparent', borderWidth: 2 },
-                  isNext && { borderColor: m.color, borderStyle: 'dashed' as const },
+                    ? { backgroundColor: m.color, borderColor: m.dark + '30', borderWidth: 1.5,
+                        shadowColor: m.color, shadowOpacity: 0.4, shadowRadius: 5, elevation: 3 }
+                    : { backgroundColor: 'rgba(0,0,0,0.05)', borderColor: 'transparent', borderWidth: 1.5 },
+                  isNext && { borderColor: m.color, borderStyle: 'solid' },
                   isNext && { transform: [{ scale: pulse }] },
                 ]}
               >
@@ -615,17 +615,25 @@ export function StreakTracker({ streakDays }: StreakTrackerProps) {
         milestone.days === 0
           ? {
               // Glass effect for the starting milestone
-              backgroundColor: 'rgba(255,255,255,0.15)',
-              borderColor: 'rgba(255,255,255,0.20)',
-              shadowColor: '#8b5cf6',
-              shadowOpacity: 0.25,
-              shadowRadius: 32,
-              elevation: 10,
+              backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.85)',
+              borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.05)',
+              shadowColor: isDark ? '#8b5cf6' : '#6366f1',
+              shadowOpacity: isDark ? 0.3 : 0.12,
+              shadowRadius: 24,
+              elevation: 8,
+              borderWidth: 1.5,
+              borderRadius: 48,
+              overflow: 'hidden',
+              padding: 36,
             } as any
           : {
               backgroundColor: milestone.bg1,
-              borderColor: milestone.color + '55',
+              borderColor: milestone.color + '40', // Softer border
               shadowColor: milestone.color,
+              borderWidth: 1,
+              borderRadius: 48,
+              overflow: 'hidden',
+              padding: 36,
             },
       ]}
     >
@@ -674,6 +682,8 @@ export function StreakTracker({ streakDays }: StreakTrackerProps) {
           {/* Counter with wiggle */}
           <Animated.Text
             style={[s.dayCounter, { color: textColor, transform: [{ translateX: wiggle }] }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
           >
             <AnimatedNumber value={days} />
           </Animated.Text>
@@ -682,7 +692,11 @@ export function StreakTracker({ streakDays }: StreakTrackerProps) {
           {/* "X days to next" badge */}
           {next && (
             <View style={[s.nextBadge, { backgroundColor: milestone.color + '35' }]}>
-              <Text style={[s.nextBadgeText, { color: textColor }]}>
+              <Text 
+                style={[s.nextBadgeText, { color: textColor }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+              >
                 {daysToNext} day{daysToNext !== 1 ? 's' : ''} to {next.emoji}
               </Text>
             </View>
@@ -729,15 +743,11 @@ export function StreakTracker({ streakDays }: StreakTrackerProps) {
 // ─── STYLES ───────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
   card: {
-    borderRadius: 28,
-    padding: 22,
-    borderWidth: 2,
-    overflow: 'hidden',
     position: 'relative',
-    shadowOffset: { width: 0, height: 14 },
-    shadowOpacity: 0.2,
-    shadowRadius: 28,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.18,
+    shadowRadius: 30,
+    elevation: 10,
   },
 
   // Header
@@ -745,14 +755,14 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 18,
+    marginBottom: 26,
   },
   streakLabelSmall: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 2.5,
-    opacity: 0.55,
-    marginBottom: 2,
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+    opacity: 0.6,
+    marginBottom: 4,
     textTransform: 'uppercase',
   },
   milestoneName: {
@@ -923,21 +933,20 @@ const s = StyleSheet.create({
     position: 'absolute',
     bottom: 86,
     alignSelf: 'center',
-    left: '15%',
-    right: '15%',
+    width: '90%', // Using width + alignSelf instead of left/right for better responsiveness
     backgroundColor: '#fff',
     borderRadius: 20,
-    paddingVertical: 10,
-    paddingHorizontal: 18,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.14,
-    shadowRadius: 20,
-    elevation: 12,
-    zIndex: 30,
+    gap: 12,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.18,
+    shadowRadius: 22,
+    elevation: 14,
+    zIndex: 1000, // Ensure it's above road and other elements
   },
   toastEmoji: { fontSize: 22 },
   toastText: { fontSize: 14, fontWeight: '700' },

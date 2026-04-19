@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAppTheme, THEMES, ThemeColors } from '@/lib/theme-context';
+import { ChevronLeft, Check } from 'lucide-react-native';
 
 function MiniGrid({ themeDef }: { themeDef: ThemeColors }) {
   // 3x3 array for a single sudoku block representation
@@ -82,7 +83,7 @@ function ThemeCard({
           </Text>
           {isSelected && (
             <View style={[styles.checkCircle, { backgroundColor: themeDef.highlight }]}>
-              <Text style={styles.checkIcon}>✓</Text>
+               <Check size={14} color="#FFFFFF" strokeWidth={3} />
             </View>
           )}
         </View>
@@ -118,7 +119,7 @@ export default function ThemeScreen() {
             pressed && { opacity: 0.6 }
           ]}
         >
-          <Text style={[styles.backIcon, { color: appTheme.accent }]}>←</Text>
+          <ChevronLeft size={24} color={appTheme.accent} strokeWidth={2} />
         </Pressable>
         <Text style={[styles.headerTitle, { color: appTheme.textPrimary }]}>Choose Theme</Text>
         <View style={{ width: 40 }} />

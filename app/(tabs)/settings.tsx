@@ -20,6 +20,22 @@ import { useAudio } from '@/lib/audio-context';
 import { useGame } from '@/lib/game-context';
 import { scheduleStreakNotifications, cancelAllNotifications } from '@/services/notificationService';
 import { useAppTheme } from '@/lib/theme-context';
+import {
+  ChevronLeft,
+  Moon,
+  Music,
+  Bell,
+  Vibrate,
+  RotateCcw,
+  Trash2,
+  ChevronRight,
+  BookOpen,
+  Info,
+  Lock,
+  User,
+  Pencil,
+} from 'lucide-react-native';
+import type { LucideIcon } from 'lucide-react-native';
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 const ERROR = '#a8364b';
@@ -45,14 +61,14 @@ function SectionLabel({ children }: { children: string }) {
 
 function SettingsRow({
   label,
-  icon,
+  icon: Icon,
   iconBg,
   value,
   onValueChange,
   theme,
 }: {
   label: string;
-  icon: string;
+  icon: LucideIcon;
   iconBg: string;
   value: boolean;
   onValueChange: (v: boolean) => void;
@@ -61,7 +77,7 @@ function SettingsRow({
   return (
     <View style={styles.settingsRow}>
       <View style={[styles.settingsIcon, { backgroundColor: iconBg }]}>
-        <Text style={styles.settingsIconEmoji}>{icon}</Text>
+        <Icon size={18} strokeWidth={1.8} color={theme.accent} />
       </View>
       <Text style={[styles.settingsRowLabel, { color: theme.textPrimary }]}>{label}</Text>
       <Switch
@@ -77,13 +93,13 @@ function SettingsRow({
 
 function ActionRow({
   label,
-  icon,
+  icon: Icon,
   onPress,
   theme,
   danger,
 }: {
   label: string;
-  icon: string;
+  icon: LucideIcon;
   onPress: () => void;
   theme: any;
   danger?: boolean;
@@ -97,14 +113,14 @@ function ActionRow({
         pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] },
       ]}
     >
-      <Text style={[styles.actionIcon, { color: theme.textSecondary }, danger && { color: ERROR }]}>{icon}</Text>
+      <Icon size={20} strokeWidth={1.8} color={danger ? ERROR : theme.textSecondary} />
       <Text style={[styles.actionLabel, { color: theme.textPrimary }, danger && { color: ERROR }]}>{label}</Text>
-      <Text style={styles.actionChevron}>›</Text>
+      <ChevronRight size={18} strokeWidth={1.8} color="rgba(92,95,99,0.3)" />
     </Pressable>
   );
 }
 
-function InfoRow({ label, icon, onPress, theme }: { label: string; icon: string; onPress?: () => void; theme: any }) {
+function InfoRow({ label, icon: Icon, onPress, theme }: { label: string; icon: LucideIcon; onPress?: () => void; theme: any }) {
   return (
     <Pressable
       onPress={onPress}
@@ -114,7 +130,7 @@ function InfoRow({ label, icon, onPress, theme }: { label: string; icon: string;
       ]}
     >
       <Text style={[styles.infoRowLabel, { color: theme.textPrimary }]}>{label}</Text>
-      <Text style={styles.infoIcon}>{icon}</Text>
+      <Icon size={18} strokeWidth={1.8} color="rgba(92,95,99,0.35)" />
     </Pressable>
   );
 }
@@ -247,7 +263,7 @@ export default function SettingsScreen() {
             onPress={() => router.back()}
             style={({ pressed }) => [styles.backBtn, { backgroundColor: theme.background === '#0F172A' ? '#1E293B' : '#f3f3f6' }, pressed && { opacity: 0.6 }]}
           >
-            <Text style={[styles.backIcon, { color: theme.accent }]}>‹</Text>
+            <ChevronLeft size={22} strokeWidth={2} color={theme.accent} />
           </Pressable>
           <Text style={[styles.headerTitle, { color: theme.accent }]}>Settings</Text>
           <View style={{ width: 40 }} />
@@ -265,13 +281,13 @@ export default function SettingsScreen() {
                 {profileImage ? (
                   <Image source={{ uri: profileImage }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
                 ) : (
-                  <Text style={styles.avatarEmoji}>🧘</Text>
+                  <User size={40} strokeWidth={1.5} color={theme.accent} />
                 )}
               </View>
             </LinearGradient>
             <View style={styles.avatarEditBadge}>
               <LinearGradient colors={[theme.accent, theme.accent]} style={styles.avatarEditGradient}>
-                <Text style={styles.avatarEditIcon}>✏</Text>
+                <Pencil size={13} strokeWidth={2} color="#fff" />
               </LinearGradient>
             </View>
           </Pressable>
@@ -293,7 +309,7 @@ export default function SettingsScreen() {
         <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.accent + '20' }]}>
           <SettingsRow
             label="Dark Mode"
-            icon="🌙"
+            icon={Moon}
             iconBg={theme.accent + '20'}
             value={isDark}
             onValueChange={(val) => setTheme(val ? 'dark' : 'light')}
@@ -302,7 +318,7 @@ export default function SettingsScreen() {
           <View style={styles.divider} />
           <SettingsRow
             label="Background Music"
-            icon="🎵"
+            icon={Music}
             iconBg={theme.accent + '20'}
             value={isMusicEnabled}
             onValueChange={toggleMusic}
@@ -311,7 +327,7 @@ export default function SettingsScreen() {
           <View style={styles.divider} />
           <SettingsRow
             label="Notifications"
-            icon="🔔"
+            icon={Bell}
             iconBg={theme.accent + '20'}
             value={settings.notificationsEnabled}
             onValueChange={toggle('notificationsEnabled')}
@@ -321,7 +337,7 @@ export default function SettingsScreen() {
 
           <SettingsRow
             label="Haptics"
-            icon="📳"
+            icon={Vibrate}
             iconBg={theme.accent + '20'}
             value={settings.hapticsEnabled}
             onValueChange={toggle('hapticsEnabled')}
@@ -334,14 +350,14 @@ export default function SettingsScreen() {
         <View style={styles.actionStack}>
           <ActionRow
             label="Reset Progress"
-            icon="↺"
+            icon={RotateCcw}
             onPress={handleResetProgress}
             theme={theme}
             danger
           />
           <ActionRow
             label="Clear Saved Games"
-            icon="🗑"
+            icon={Trash2}
             onPress={handleClearGames}
             theme={theme}
           />
@@ -350,11 +366,11 @@ export default function SettingsScreen() {
         {/* ── Legal & Info ── */}
         <SectionLabel>LEGAL & INFO</SectionLabel>
         <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.accent + '20' }]}>
-          <InfoRow label="How to Play" icon="📖" onPress={() => router.push('/learn')} theme={theme} />
+          <InfoRow label="How to Play" icon={BookOpen} onPress={() => router.push('/learn')} theme={theme} />
           <View style={styles.divider} />
-          <InfoRow label="About SudoZen" icon="ℹ" onPress={() => router.push('/about' as any)} theme={theme} />
+          <InfoRow label="About SudoZen" icon={Info} onPress={() => router.push('/about' as any)} theme={theme} />
           <View style={styles.divider} />
-          <InfoRow label="Privacy Policy" icon="🔒" onPress={() => router.push('/privacy-policy' as any)} theme={theme} />
+          <InfoRow label="Privacy Policy" icon={Lock} onPress={() => router.push('/privacy-policy' as any)} theme={theme} />
         </View>
 
         {/* ── Footer ── */}
@@ -412,10 +428,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  backIcon: {
-    fontSize: 26,
-    lineHeight: 30,
-  },
   headerTitle: {
     fontSize: 22,
     fontWeight: '800',
@@ -458,7 +470,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarEmoji: { fontSize: 40 },
   avatarEditBadge: {
     position: 'absolute',
     bottom: 2,
@@ -473,7 +484,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarEditIcon: { fontSize: 13, color: '#fff' },
 
   inputLabel: {
     fontSize: 12,
@@ -533,7 +543,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  settingsIconEmoji: { fontSize: 18 },
   settingsRowLabel: {
     flex: 1,
     fontSize: 15,
@@ -557,15 +566,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     shadowRadius: 8,
   },
-  actionIcon: { fontSize: 20 },
   actionLabel: {
     flex: 1,
     fontSize: 15,
     fontWeight: '500',
-  },
-  actionChevron: {
-    fontSize: 22,
-    color: 'rgba(92,95,99,0.3)',
   },
 
   // Info rows
@@ -580,7 +584,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
   },
-  infoIcon: { fontSize: 18, color: 'rgba(92,95,99,0.35)' },
 
   // Footer
   footer: {

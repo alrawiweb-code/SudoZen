@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable, ScrollView, Platform } from 'react-n
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '@/lib/theme-context';
+import { ChevronLeft } from 'lucide-react-native';
 
 export default function AboutScreen() {
   const router = useRouter();
@@ -41,7 +42,7 @@ export default function AboutScreen() {
             pressed && { opacity: 0.6, transform: [{ scale: 0.95 }] },
           ]}
         >
-          <Text style={[styles.backIcon, { color: colors.accent }]}>←</Text>
+          <ChevronLeft size={24} color={colors.accent} strokeWidth={2} />
         </Pressable>
         <Text style={[styles.headerTitle, { color: colors.primaryText }]}>About SudoZen</Text>
         <View style={{ width: 40 }} />
