@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
+import { toLocalDateString } from '@/lib/utils';
 import {
   generateSudokuPuzzle,
   placeNumber,
@@ -58,6 +59,7 @@ export interface GameContextType {
   pauseGame: () => void;
   resumeGame: () => void;
   isPaused: boolean;
+  resetStats: () => void;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -76,7 +78,8 @@ type GameAction =
   | { type: 'SET_STATS'; payload: GameStats }
   | { type: 'TICK_TIMER' }
   | { type: 'PAUSE_GAME' }
-  | { type: 'RESUME_GAME' };
+  | { type: 'RESUME_GAME' }
+  | { type: 'RESET_STATS' };
 
 interface GameState {
   currentGame: SudokuGrid | null;
@@ -102,7 +105,6 @@ const initialStats: GameStats = {
     easy: { played: 0, won: 0, totalTime: 0 },
     medium: { played: 0, won: 0, totalTime: 0 },
     hard: { played: 0, won: 0, totalTime: 0 },
-    expert: { played: 0, won: 0, totalTime: 0 },
   },
 };
 
@@ -263,8 +265,6 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         },
       }
       
-      const { toLocalDateString } = require('@/lib/utils');
-
       // ── Streak logic (strictly local date to prevent timezone drifts) ─────
       const todayDate = new Date();
       const todayStr = toLocalDateString(todayDate);
@@ -358,6 +358,13 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       };
     }
 
+    case 'RESET_STATS': {
+      return {
+        ...state,
+        stats: initialStats,
+      };
+    }
+
     default:
       return state;
   }
@@ -366,15 +373,25 @@ function gameReducer(state: GameState, action: GameAction): GameState {
 export function GameProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(gameReducer, initialState);
 
-  // Load stats from storage on mount
+  // Load stats and progress from storage on mount
   useEffect(() => {
     loadStatsFromStorage();
+    StorageService.loadCurrentGame().then(saved => {
+      if (saved) dispatch({ type: 'LOAD_GAME', payload: saved });
+    });
   }, []);
 
   // Save stats to storage whenever they change
   useEffect(() => {
     saveStatsToStorage(state.stats);
   }, [state.stats]);
+
+  // Save current game progress
+  useEffect(() => {
+    if (state.currentGame) {
+      StorageService.saveCurrentGame(state.currentGame);
+    }
+  }, [state.currentGame]);
 
   // Timer interval
   useEffect(() => {
@@ -499,6 +516,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'RESUME_GAME' });
   }, []);
 
+  const resetStats = useCallback(() => {
+    dispatch({ type: 'RESET_STATS' });
+  }, []);
+
   const value: GameContextType = {
     currentGame: state.currentGame,
     stats: state.stats,
@@ -520,6 +541,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     pauseGame,
     resumeGame,
     isPaused: state.isPaused,
+    resetStats,
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

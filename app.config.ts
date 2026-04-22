@@ -33,7 +33,7 @@ const config: ExpoConfig = {
   },
   android: {
     adaptiveIcon: {
-      backgroundColor: "#FFFFFF",
+      backgroundColor: "#6945C7",
       foregroundImage: "./assets/icon.png",
     },
     edgeToEdgeEnabled: true,
@@ -65,13 +65,6 @@ const config: ExpoConfig = {
       "expo-audio",
       {
         microphonePermission: false,
-      },
-    ],
-    [
-      "expo-video",
-      {
-        supportsBackgroundPlayback: true,
-        supportsPictureInPicture: true,
       },
     ],
     [

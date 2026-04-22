@@ -3,7 +3,7 @@
  * Handles puzzle generation, validation, solving, and hint generation
  */
 
-export type Difficulty = 'easy' | 'medium' | 'hard' | 'expert';
+export type Difficulty = 'easy' | 'medium' | 'hard';
 
 export interface SudokuCell {
   value: number; // 0 = empty, 1-9 = filled
@@ -14,9 +14,10 @@ export interface SudokuCell {
 
 export interface SudokuGrid {
   cells: SudokuCell[][];
+  solution: number[][];
   difficulty: Difficulty;
   startTime: number;
-  moves: Array<{ row: number; col: number; value: number; timestamp: number }>;
+  moves: Array<{ row: number; col: number; value: number; previousValue: number; previousNotes: number[]; timestamp: number }>;
   isComplete: boolean;
 }
 
@@ -44,6 +45,7 @@ export function generateSudokuPuzzle(difficulty: Difficulty): SudokuGrid {
         notes: new Set(),
       }))
     ),
+    solution,
     difficulty,
     startTime: Date.now(),
     moves: [],
@@ -236,6 +238,9 @@ export function placeNumber(
     return { isValid: false, isComplete: false };
   }
 
+  const previousValue = cell.value;
+  const previousNotes = Array.from(cell.notes);
+
   cell.value = value;
   cell.isCorrect = isCorrectPlacement(grid, row, col);
 
@@ -244,6 +249,8 @@ export function placeNumber(
     row,
     col,
     value,
+    previousValue,
+    previousNotes,
     timestamp: Date.now(),
   });
 
@@ -258,38 +265,14 @@ export function placeNumber(
 }
 
 /**
- * Check if a placement is correct
+ * Check if a placement is correct (matches the final solution)
  */
 function isCorrectPlacement(grid: SudokuGrid, row: number, col: number): boolean {
   const value = grid.cells[row][col].value;
   if (value === 0) return false;
 
-  // Check row
-  for (let c = 0; c < 9; c++) {
-    if (c !== col && grid.cells[row][c].value === value) {
-      return false;
-    }
-  }
-
-  // Check column
-  for (let r = 0; r < 9; r++) {
-    if (r !== row && grid.cells[r][col].value === value) {
-      return false;
-    }
-  }
-
-  // Check 3x3 box
-  const boxRow = Math.floor(row / 3) * 3;
-  const boxCol = Math.floor(col / 3) * 3;
-  for (let r = boxRow; r < boxRow + 3; r++) {
-    for (let c = boxCol; c < boxCol + 3; c++) {
-      if ((r !== row || c !== col) && grid.cells[r][c].value === value) {
-        return false;
-      }
-    }
-  }
-
-  return true;
+  // Validate against the true solution to prevent "correct" dead ends
+  return value === grid.solution[row][col];
 }
 
 /**
@@ -313,6 +296,9 @@ export function updateAllCellsCorrectness(grid: SudokuGrid): void {
 export function clearCell(grid: SudokuGrid, row: number, col: number): void {
   const cell = grid.cells[row][col];
   if (!cell.isGiven) {
+    const previousValue = cell.value;
+    const previousNotes = Array.from(cell.notes);
+
     cell.value = 0;
     cell.isCorrect = false;
     cell.notes.clear();
@@ -321,6 +307,8 @@ export function clearCell(grid: SudokuGrid, row: number, col: number): void {
       row,
       col,
       value: 0,
+      previousValue,
+      previousNotes,
       timestamp: Date.now(),
     });
     
@@ -367,23 +355,7 @@ export function getHint(grid: SudokuGrid): { row: number; col: number; value: nu
   // Pick random empty cell
   const { r, c } = emptyCells[Math.floor(Math.random() * emptyCells.length)];
 
-  // Find valid values
-  const validValues = [];
-  for (let num = 1; num <= 9; num++) {
-    if (isValidPlacement(
-      grid.cells.map(row => row.map(cell => cell.value)),
-      r,
-      c,
-      num
-    )) {
-      validValues.push(num);
-    }
-  }
-
-  if (validValues.length === 0) return null;
-
-  // Return first valid value (could be randomized)
-  return { row: r, col: c, value: validValues[0] };
+  return { row: r, col: c, value: grid.solution[r][c] };
 }
 
 /**
@@ -406,13 +378,12 @@ function checkCompletion(grid: SudokuGrid): boolean {
  * Get number of cells to remove based on difficulty
  */
 function getCellsToRemoveByDifficulty(difficulty: Difficulty): number {
-  const map = {
+  const cellsToRemove = {
     easy: 30,
     medium: 40,
     hard: 50,
-    expert: 60,
-  };
-  return map[difficulty];
+  }[difficulty] || 40;
+  return cellsToRemove;
 }
 
 /**
@@ -435,9 +406,15 @@ export function undoMove(grid: SudokuGrid): void {
   if (!lastMove) return;
 
   const cell = grid.cells[lastMove.row][lastMove.col];
-  cell.value = 0;
-  cell.isCorrect = false;
-  cell.notes.clear();
+  cell.value = lastMove.previousValue;
+  // Restore previous notes if any
+  cell.notes = new Set(lastMove.previousNotes || []);
+
+  if (cell.value !== 0) {
+    cell.isCorrect = isCorrectPlacement(grid, lastMove.row, lastMove.col);
+  } else {
+    cell.isCorrect = false;
+  }
 
   updateAllCellsCorrectness(grid);
   grid.isComplete = false;

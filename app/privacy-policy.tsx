@@ -1,94 +1,16 @@
-/**
- * Privacy Policy Screen
- *
- * Opens the Privacy Policy in a native in-app browser sheet using expo-web-browser.
- * This avoids the need for react-native-webview (which requires a native rebuild)
- * and provides a native SFSafariViewController (iOS) / Chrome Custom Tab (Android)
- * experience — feels fully in-app but with zero native module installation.
- */
-
-import { View, Text, StyleSheet, Pressable, ActivityIndicator, Platform } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, Pressable, ScrollView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useEffect, useState } from 'react';
 import { useAppTheme } from '@/lib/theme-context';
-import * as WebBrowser from 'expo-web-browser';
-import { ChevronLeft, AlertCircle, CheckCircle2 } from 'lucide-react-native';
-
-const PRIVACY_POLICY_URL = 'https://privacy-policy-umber-one.vercel.app/';
+import { ChevronLeft } from 'lucide-react-native';
 
 export default function PrivacyPolicyScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { theme } = useAppTheme();
-  const [loading, setLoading] = useState(true);
-  const [opened, setOpened] = useState(false);
-  const [error, setError] = useState(false);
 
   const paddingTop = Platform.OS === 'web' ? 64 : insets.top;
-
-  // Open the browser sheet as soon as the screen mounts
-  useEffect(() => {
-    let isMounted = true;
-
-    const open = async () => {
-      try {
-        setLoading(true);
-        setError(false);
-
-        const result = await WebBrowser.openBrowserAsync(PRIVACY_POLICY_URL, {
-          presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET,
-          toolbarColor: theme.background === '#0F172A' ? '#0F172A' : '#ffffff',
-          controlsColor: theme.accent,
-          enableBarCollapsing: true,
-          showTitle: true,
-          createTask: false, // Keep as in-app modal, not a separate Android task
-        });
-
-        if (isMounted) {
-          setLoading(false);
-          setOpened(true);
-          // If the user dismissed the browser, go back automatically
-          if (result.type === 'dismiss' || result.type === 'cancel') {
-            router.back();
-          }
-        }
-      } catch (e) {
-        if (isMounted) {
-          setLoading(false);
-          setError(true);
-        }
-      }
-    };
-
-    open();
-
-    return () => { isMounted = false; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleRetry = async () => {
-    setError(false);
-    setLoading(true);
-    try {
-      const result = await WebBrowser.openBrowserAsync(PRIVACY_POLICY_URL, {
-        presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET,
-        toolbarColor: theme.background === '#0F172A' ? '#0F172A' : '#ffffff',
-        controlsColor: theme.accent,
-        enableBarCollapsing: true,
-        showTitle: true,
-        createTask: false,
-      });
-      setLoading(false);
-      setOpened(true);
-      if (result.type === 'dismiss' || result.type === 'cancel') {
-        router.back();
-      }
-    } catch {
-      setLoading(false);
-      setError(true);
-    }
-  };
 
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
@@ -98,8 +20,8 @@ export default function PrivacyPolicyScreen() {
           styles.header,
           {
             paddingTop: paddingTop + 12,
-            backgroundColor: theme.card,
             borderBottomColor: theme.accent + '20',
+            backgroundColor: theme.card,
           },
         ]}
       >
@@ -118,54 +40,40 @@ export default function PrivacyPolicyScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      {/* ── Body: Loading / Error / Opened ── */}
-      {loading && !error && (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={theme.accent} />
-          <Text style={[styles.statusText, { color: theme.textSecondary }]}>
-            Opening Privacy Policy…
+      {/* ── Content ── */}
+      <ScrollView
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 40) }]}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={[styles.card, { backgroundColor: theme.card }]}>
+          <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Effective Date: 05/04/2026</Text>
+          
+          <Text style={[styles.description, { color: theme.textSecondary }]}>
+            This app is designed to respect your privacy.
           </Text>
-        </View>
-      )}
 
-      {error && (
-        <View style={styles.centered}>
-          <AlertCircle size={48} color={theme.accent} strokeWidth={1.5} style={{ marginBottom: 16 }} />
-          <Text style={[styles.errorTitle, { color: theme.textPrimary }]}>Unable to open</Text>
-          <Text style={[styles.errorSub, { color: theme.textSecondary }]}>
-            Please check your internet connection and try again.
+          <Text style={[styles.description, { color: theme.textSecondary }]}>
+            We do not collect, store, or share any personally identifiable information from users. The app can be used without providing any personal data.
           </Text>
-          <Pressable
-            onPress={handleRetry}
-            style={({ pressed }) => [
-              styles.retryBtn,
-              { backgroundColor: theme.accent },
-              pressed && { opacity: 0.8, transform: [{ scale: 0.97 }] },
-            ]}
-          >
-            <Text style={styles.retryText}>Retry</Text>
-          </Pressable>
-        </View>
-      )}
 
-      {opened && !error && !loading && (
-        <View style={styles.centered}>
-          <CheckCircle2 size={48} color={theme.accent} strokeWidth={1.5} />
-          <Text style={[styles.statusText, { color: theme.textSecondary, marginTop: 12 }]}>
-            Privacy Policy opened.
+          <Text style={[styles.description, { color: theme.textSecondary }]}>
+            This app does not use third-party services such as analytics tools, advertising networks, or tracking technologies that collect user data.
           </Text>
-          <Pressable
-            onPress={() => router.back()}
-            style={({ pressed }) => [
-              styles.retryBtn,
-              { backgroundColor: theme.accent, marginTop: 20 },
-              pressed && { opacity: 0.8 },
-            ]}
-          >
-            <Text style={styles.retryText}>Go Back</Text>
-          </Pressable>
+
+          <Text style={[styles.description, { color: theme.textSecondary }]}>
+            The app may request limited device permissions strictly for functionality purposes. These permissions are not used to collect, store, or share any personal information.
+          </Text>
+
+          <Text style={[styles.description, { color: theme.textSecondary }]}>
+            If, in the future, features requiring data collection (such as analytics, login, or advertisements) are introduced, this Privacy Policy will be updated accordingly, and users will be notified.
+          </Text>
+
+          <Text style={[styles.description, { color: theme.textSecondary, marginTop: 16 }]}>
+            If you have any questions or concerns about this Privacy Policy, please contact us at:
+            {'\n'}alrawiweb@gmail.com
+          </Text>
         </View>
-      )}
+      </ScrollView>
     </View>
   );
 }
@@ -194,49 +102,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  backIcon: {
-    fontSize: 24,
-    fontWeight: '600',
-    lineHeight: 28,
-  },
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
     letterSpacing: -0.2,
   },
-  centered: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 40,
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    gap: 16,
+  },
+  card: {
+    borderRadius: 16,
+    padding: 24,
     gap: 12,
   },
-  statusText: {
-    fontSize: 15,
-    fontWeight: '500',
-    textAlign: 'center',
-  },
-  errorEmoji: {
-    fontSize: 40,
-  },
-  errorTitle: {
+  cardTitle: {
     fontSize: 20,
     fontWeight: '700',
-    marginTop: 8,
+    marginBottom: 8,
   },
-  errorSub: {
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  retryBtn: {
-    paddingHorizontal: 36,
-    paddingVertical: 14,
-    borderRadius: 50,
-  },
-  retryText: {
-    color: '#fff',
+  description: {
     fontSize: 15,
-    fontWeight: '700',
+    lineHeight: 24,
   },
 });

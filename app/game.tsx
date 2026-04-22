@@ -558,9 +558,13 @@ function OptionsPopup({ visible, theme, onResume, onPause, isPaused, onRestart, 
         const [hapticsEnabled, setHapticsEnabled] = useState(true);
 
   useEffect(() => {
-          AsyncStorage.getItem('hapticsEnabled').then((val) => {
-            setHapticsEnabled(val === null ? true : val === 'true');
-          });
+    AsyncStorage.getItem('app_settings').then((val) => {
+      if (val) {
+        setHapticsEnabled(JSON.parse(val).hapticsEnabled ?? true);
+      } else {
+        setHapticsEnabled(true);
+      }
+    });
   }, []);
 
   const triggerHaptic = useCallback((style: any = Haptics.ImpactFeedbackStyle.Light, type: 'impact' | 'notification' = 'impact') => {
@@ -574,8 +578,12 @@ function OptionsPopup({ visible, theme, onResume, onPause, isPaused, onRestart, 
 
   const handleToggleHaptics = () => {
     const nextState = !hapticsEnabled;
-        setHapticsEnabled(nextState);
-        AsyncStorage.setItem('hapticsEnabled', nextState.toString());
+    setHapticsEnabled(nextState);
+    AsyncStorage.getItem('app_settings').then((val) => {
+      const current = val ? JSON.parse(val) : { hapticsEnabled: true, notificationsEnabled: true, playerName: '' };
+      current.hapticsEnabled = nextState;
+      AsyncStorage.setItem('app_settings', JSON.stringify(current));
+    });
   };
 
         // Audio Lifecycle

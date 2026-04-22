@@ -22,6 +22,8 @@ const CHANNEL_REMINDER = 'sudozen-reminders';
 const CHANNEL_STREAK   = 'sudozen-streak';
 const CHANNEL_MILESTONE = 'sudozen-milestone';
 
+const log = (...args: any[]) => { if (__DEV__) console.log(...args); };
+
 // ── Identifier constants (for cancel/replace) ─────────────────────────────────
 const ID_DAILY_REMINDER = 'sudozen-daily-reminder';
 const ID_STREAK_WARNING = 'sudozen-streak-warning';
@@ -71,7 +73,7 @@ export async function ensureAndroidChannels(): Promise<void> {
       lightColor: '#fbbf24',
     });
   } catch (e) {
-    console.log('[Notifications] Channel setup error:', e);
+    log('[Notifications] Channel setup error:', e);
   }
 }
 
@@ -140,7 +142,7 @@ export async function scheduleStreakNotifications(
   if (completedToday) {
     // User has already played today — no nagging needed until tomorrow.
     // Both cancellations above are sufficient.
-    console.log('[Notifications] Already completed today — reminders suppressed until tomorrow.');
+    log('[Notifications] Already completed today — reminders suppressed until tomorrow.');
     return;
   }
 
@@ -186,9 +188,9 @@ export async function scheduleStreakNotifications(
       });
     }
 
-    console.log(`[Notifications] Streak reminders scheduled (streak=${streakDays}).`);
+    log(`[Notifications] Streak reminders scheduled (streak=${streakDays}).`);
   } catch (e) {
-    console.log('[Notifications] Schedule error:', e);
+    log('[Notifications] Schedule error:', e);
   }
 }
 
@@ -225,9 +227,9 @@ export async function fireMilestoneNotification(milestoneDays: number): Promise<
       },
     });
 
-    console.log(`[Notifications] Milestone notification fired for ${milestoneDays} days.`);
+    log(`[Notifications] Milestone notification fired for ${milestoneDays} days.`);
   } catch (e) {
-    console.log('[Notifications] Milestone notification error:', e);
+    log('[Notifications] Milestone notification error:', e);
   }
 }
 

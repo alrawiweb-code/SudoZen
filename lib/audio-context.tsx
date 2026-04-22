@@ -5,6 +5,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // Static require — MUST be a static path for bundler to include the asset
 const MUSIC_SOURCE = require('../assets/music.mp3');
 
+const log = (...args: any[]) => { if (__DEV__) console.log(...args); };
+
 interface AudioContextType {
   isMusicEnabled: boolean;
   toggleMusic: () => void;
@@ -32,7 +34,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     const init = async () => {
       try {
-        console.log('[Audio] Initializing expo-audio...');
+        log('[Audio] Initializing expo-audio...');
 
         // Configure audio session
         await setAudioModeAsync({
@@ -42,7 +44,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         // Read user preference
         const enabledStr = await AsyncStorage.getItem('musicEnabled');
         const initiallyEnabled = enabledStr === null ? true : enabledStr === 'true';
-        console.log('[Audio] User preference:', initiallyEnabled);
+        log('[Audio] User preference:', initiallyEnabled);
 
         if (!isMounted) return;
         setIsMusicEnabled(initiallyEnabled);
@@ -54,16 +56,16 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
         playerRef.current = player;
         isInitialized.current = true;
-        console.log('[Audio] Player created successfully');
+        log('[Audio] Player created successfully');
 
         // Play immediately if enabled
         if (initiallyEnabled) {
           player.play();
-          console.log('[Audio] Playing music...');
+          log('[Audio] Playing music...');
         }
 
       } catch (e) {
-        console.log('[Audio] Init error:', e);
+        log('[Audio] Init error:', e);
       }
     };
 

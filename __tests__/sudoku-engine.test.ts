@@ -40,7 +40,7 @@ describe('Sudoku Engine', () => {
     });
 
     it('should generate puzzles with different difficulties', () => {
-      const difficulties = ['easy', 'medium', 'hard', 'expert'] as const;
+      const difficulties = ['easy', 'medium', 'hard'] as const;
       difficulties.forEach(diff => {
         const puzzle = generateSudokuPuzzle(diff);
         expect(puzzle.difficulty).toBe(diff);

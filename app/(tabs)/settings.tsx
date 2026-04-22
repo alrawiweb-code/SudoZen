@@ -10,7 +10,6 @@ import {
   Platform,
   Image,
 } from 'react-native';
-import { launchImageLibrary } from 'react-native-image-picker';
 import { useRouter } from 'expo-router';
 import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -142,43 +141,13 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { isMusicEnabled, toggleMusic } = useAudio();
   const { theme, isDark, setTheme } = useAppTheme();
-  const { stats } = useGame();
+  const { stats, resetStats } = useGame();
 
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
-  const [profileImage, setProfileImage] = useState<string | null>(null);
 
   useEffect(() => {
     loadSettings();
-    loadProfileImage();
   }, []);
-
-  const loadProfileImage = async () => {
-    try {
-      const saved = await AsyncStorage.getItem('profileImage');
-      if (saved) setProfileImage(saved);
-    } catch {}
-  };
-
-  const pickImage = () => {
-    launchImageLibrary(
-      {
-        mediaType: 'photo',
-        quality: 0.7,
-      },
-      async (response) => {
-        if (response.didCancel) return;
-        if (response.errorCode) return;
-        
-        if (response.assets && response.assets.length > 0) {
-          const uri = response.assets[0].uri;
-          if (uri) {
-            setProfileImage(uri);
-            await AsyncStorage.setItem('profileImage', uri);
-          }
-        }
-      }
-    );
-  };
 
   const loadSettings = async () => {
     try {
@@ -194,8 +163,9 @@ export default function SettingsScreen() {
     } catch {}
   };
 
-  const toggle = (key: keyof AppSettings) => async () => {
-    const nextVal = !settings[key as keyof AppSettings];
+  type BooleanSettingsKey = { [K in keyof AppSettings]: AppSettings[K] extends boolean ? K : never }[keyof AppSettings];
+  const toggle = (key: BooleanSettingsKey) => async () => {
+    const nextVal = !settings[key];
     const updated = { ...settings, [key]: nextVal };
     await save(updated);
 
@@ -224,6 +194,7 @@ export default function SettingsScreen() {
           style: 'destructive',
           onPress: async () => {
             await AsyncStorage.multiRemove(['sudoku_stats', 'sudoku_current_game']);
+            resetStats();
           },
         },
       ]
@@ -271,26 +242,16 @@ export default function SettingsScreen() {
 
         {/* ── Profile ── */}
         <View style={styles.profileSection}>
-          {/* Avatar circle */}
-          <Pressable style={styles.avatarWrapper} onPress={pickImage}>
+          <View style={styles.avatarWrapper}>
             <LinearGradient
               colors={[theme.accent, theme.accent]}
               style={[styles.avatarGradient, { shadowColor: theme.accent }]}
             >
               <View style={[styles.avatarInner, { backgroundColor: theme.card, overflow: 'hidden' }]}>
-                {profileImage ? (
-                  <Image source={{ uri: profileImage }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-                ) : (
-                  <User size={40} strokeWidth={1.5} color={theme.accent} />
-                )}
+                <User size={40} strokeWidth={1.5} color={theme.accent} />
               </View>
             </LinearGradient>
-            <View style={styles.avatarEditBadge}>
-              <LinearGradient colors={[theme.accent, theme.accent]} style={styles.avatarEditGradient}>
-                <Pencil size={13} strokeWidth={2} color="#fff" />
-              </LinearGradient>
-            </View>
-          </Pressable>
+          </View>
 
           {/* Name input */}
           <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Your Name</Text>
@@ -375,7 +336,7 @@ export default function SettingsScreen() {
 
         {/* ── Footer ── */}
         <View style={styles.footer}>
-          <Text style={styles.footerVersion}>SudoZen v1.0.0</Text>
+          <Text style={styles.footerVersion}>SudoZen v1.1.1</Text>
           <Text style={styles.footerMotto}>Peace of mind in every move</Text>
         </View>
 
