@@ -2,7 +2,7 @@
 import "./scripts/load-env.js";
 import type { ExpoConfig } from "expo/config";
 
-const bundleId = "com.alrawi.sudozen";
+const bundleId = "com.alrawi.sudoku";
 const schemeFromBundleId = "sudozen";
 
 const env = {
@@ -17,7 +17,7 @@ const env = {
 const config: ExpoConfig = {
   name: env.appName,
   slug: env.appSlug,
-  version: "1.1.1",
+  version: "1.1.4",
   orientation: "portrait",
   icon: "./assets/icon.png",
   scheme: env.scheme,
@@ -32,6 +32,7 @@ const config: ExpoConfig = {
       }
   },
   android: {
+    versionCode: 4,
     adaptiveIcon: {
       backgroundColor: "#6945C7",
       foregroundImage: "./assets/icon.png",

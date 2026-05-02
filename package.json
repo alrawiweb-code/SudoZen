@@ -1,6 +1,6 @@
 {
   "name": "sudoku-master",
-  "version": "1.0.0",
+  "version": "1.1.2",
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
@@ -12,8 +12,8 @@
     "lint": "expo lint",
     "format": "prettier --write .",
     "test": "vitest run",
-    "build:apk": "set \"JAVA_HOME=C:\\Program Files\\Android\\Android Studio\\jbr\" && cd android && .\\gradlew assembleDebug",
-    "build:release": "set \"JAVA_HOME=C:\\Program Files\\Android\\Android Studio\\jbr\" && cd android && .\\gradlew assembleRelease"
+    "build:apk": "export JAVA_HOME=/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home && cd android && ./gradlew assembleRelease",
+    "build:aab": "export JAVA_HOME=/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home && cd android && ./gradlew bundleRelease"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

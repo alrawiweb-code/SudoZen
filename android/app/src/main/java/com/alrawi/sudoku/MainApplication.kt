@@ -1,4 +1,4 @@
-package com.alrawi.sudozen
+package com.alrawi.sudoku
 
 import android.app.Application
 import android.content.res.Configuration

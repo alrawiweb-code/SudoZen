@@ -12,3 +12,8 @@
 -keep class com.facebook.react.turbomodule.** { *; }
 
 # Add any project specific keep options here:
+-dontwarn expo.modules.kotlin.services.FilePermissionService$Permission
+-dontwarn expo.modules.kotlin.services.FilePermissionService
+-dontwarn expo.modules.**
+-keep class expo.modules.** { *; }
+

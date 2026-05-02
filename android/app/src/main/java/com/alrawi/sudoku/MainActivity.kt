@@ -1,4 +1,4 @@
-package com.alrawi.sudozen
+package com.alrawi.sudoku
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

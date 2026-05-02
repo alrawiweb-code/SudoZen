@@ -462,8 +462,7 @@ function MilestoneRoad({ currentDays }: { currentDays: number }) {
                 style={[
                   s.roadNode,
                   reached
-                    ? { backgroundColor: m.color, borderColor: m.dark + '30', borderWidth: 1.5,
-                        shadowColor: m.color, shadowOpacity: 0.4, shadowRadius: 5, elevation: 3 }
+                    ? { backgroundColor: m.color, borderColor: m.dark + '30', borderWidth: 1.5 }
                     : { backgroundColor: 'rgba(0,0,0,0.05)', borderColor: 'transparent', borderWidth: 1.5 },
                   isNext && { borderColor: m.color, borderStyle: 'solid' },
                   isNext && { transform: [{ scale: pulse }] },
@@ -611,7 +610,7 @@ export function StreakTracker({ streakDays }: StreakTrackerProps) {
   return (
     <View
       style={[
-        s.card,
+        s.streakWrap,
         milestone.days === 0
           ? {
               // Glass effect for the starting milestone
@@ -620,19 +619,16 @@ export function StreakTracker({ streakDays }: StreakTrackerProps) {
               shadowColor: isDark ? '#8b5cf6' : '#6366f1',
               shadowOpacity: isDark ? 0.3 : 0.12,
               shadowRadius: 24,
-              elevation: 8,
               borderWidth: 1.5,
               borderRadius: 48,
-              overflow: 'hidden',
               padding: 36,
-            } as any
+            }
           : {
               backgroundColor: milestone.bg1,
               borderColor: milestone.color + '40', // Softer border
               shadowColor: milestone.color,
               borderWidth: 1,
               borderRadius: 48,
-              overflow: 'hidden',
               padding: 36,
             },
       ]}
@@ -643,9 +639,9 @@ export function StreakTracker({ streakDays }: StreakTrackerProps) {
       {/* ── Unlock toast ── */}
       {justUnlocked && (
         <Animated.View
+          pointerEvents="none"
           style={[
             s.toast,
-            { shadowColor: justUnlocked.color },
             {
               opacity: toastAnim,
               transform: [
@@ -676,7 +672,9 @@ export function StreakTracker({ streakDays }: StreakTrackerProps) {
 
       {/* ── Creature + counter ── */}
       <View style={s.mainRow}>
-        <CartoonCreature milestone={milestone} triggerBounce={triggerBounce} textColor={textColor} />
+        <View style={{ width: 110, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <CartoonCreature milestone={milestone} triggerBounce={triggerBounce} textColor={textColor} />
+        </View>
 
         <View style={s.counterCol}>
           {/* Counter with wiggle */}
@@ -742,12 +740,10 @@ export function StreakTracker({ streakDays }: StreakTrackerProps) {
 
 // ─── STYLES ───────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  card: {
+  streakWrap: {
+    width: '100%',
     position: 'relative',
     shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.18,
-    shadowRadius: 30,
-    elevation: 10,
   },
 
   // Header
@@ -755,7 +751,7 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 26,
+    marginBottom: 18,
   },
   streakLabelSmall: {
     fontSize: 9,
@@ -857,7 +853,7 @@ const s = StyleSheet.create({
 
   // Milestone road
   roadWrapper: {
-    marginBottom: 18,
+    marginBottom: 20,
   },
   roadRow: {
     flexDirection: 'row',
@@ -903,10 +899,6 @@ const s = StyleSheet.create({
     paddingVertical: 15,
     borderRadius: 18,
     alignItems: 'center',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.38,
-    shadowRadius: 14,
-    elevation: 6,
   },
   addBtnText: {
     color: '#fff',
@@ -931,9 +923,9 @@ const s = StyleSheet.create({
   // Unlock toast
   toast: {
     position: 'absolute',
-    bottom: 86,
+    top: 14,
     alignSelf: 'center',
-    width: '90%', // Using width + alignSelf instead of left/right for better responsiveness
+    width: '90%',
     backgroundColor: '#fff',
     borderRadius: 20,
     paddingVertical: 12,
@@ -942,11 +934,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.18,
-    shadowRadius: 22,
-    elevation: 14,
-    zIndex: 1000, // Ensure it's above road and other elements
+    zIndex: 50,
   },
   toastEmoji: { fontSize: 22 },
   toastText: { fontSize: 14, fontWeight: '700' },
